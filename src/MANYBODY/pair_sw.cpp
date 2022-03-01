@@ -181,6 +181,9 @@ void PairSW::compute(int eflag, int vflag)
         ikparam = elem3param[itype][ktype][ktype];
         ijkparam = elem3param[itype][jtype][ktype];
 
+        // Skip if only two-body interactions
+        if (params[ijkparam].lambda == 0) continue;
+
         delr2[0] = x[k][0] - xtmp;
         delr2[1] = x[k][1] - ytmp;
         delr2[2] = x[k][2] - ztmp;
