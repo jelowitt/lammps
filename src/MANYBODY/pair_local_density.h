@@ -50,7 +50,7 @@ class PairLocalDensity : public Pair {
   //This information is read from the tabulated input file
 
   int nLD, nrho;                            // number of LD types
-  int **a, **b;                             // central and neigh atom filters
+  int **a, **b, **c;                        // central, neigh, part filters
   double *uppercut, *lowercut;              // upper and lower cutoffs
   double *uppercutsq, *lowercutsq;          // square of above cutoffs
   double *c0, *c2, *c4, *c6;                // coeffs for indicator function

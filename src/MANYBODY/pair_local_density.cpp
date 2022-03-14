@@ -224,13 +224,13 @@ void PairLocalDensity::compute(int eflag, int vflag)
           else {
              phi = c0[k] + rsq * (c2[k] + rsq * (c4[k] + c6[k]*rsq));
         }
-        localrho[k][i] += (phi * b[k][jtype]);
+        localrho[k][i] += (phi * c[k][jtype]);
 
         /*checking for both i,j is necessary
         since a half neighbor list is processed.*/
 
         if (newton_pair || j<nlocal) {
-            localrho[k][j] += (phi * b[k][itype]);
+            localrho[k][j] += (phi * c[k][itype]);
         }
       }
     }
@@ -480,8 +480,8 @@ double PairLocalDensity::single(int /* i */, int /* j */, int itype, int jtype,
         else {
              phi = c0[k] + rsq * (c2[k] + rsq * (c4[k] + c6[k]*rsq));
         }
-        LD[k][1] += (phi * b[k][jtype]);
-        LD[k][2] += (phi * b[k][itype]);
+        LD[k][1] += (phi * c[k][jtype]);
+        LD[k][2] += (phi * c[k][itype]);
     }
 
     for (k = 0; k < nLD; k++) {
@@ -704,12 +704,14 @@ void PairLocalDensity::parse_file(char *filename) {
   memory->create(ftmp, nrho*nLD, "pairLD:ftmp");
 
   // setting up central and neighbor atom filters
-  memory->create(a, nLD, atom->ntypes+1 , "pairLD:a");
+  memory->create(a, nLD, atom->ntypes+1, "pairLD:a");
   memory->create(b, nLD, atom->ntypes+1, "pairLD:b");
+  memory->create(b, nLD, atom->ntypes+1, "pairLD:c");
   for (int k = 0; k < nLD; k++) {
     for (int n = 1; n <= atom->ntypes; n++) {
       a[k][n] = 0;
       b[k][n] = 0;
+      c[k][n] = 0;
     }
   }
 
@@ -751,6 +753,15 @@ void PairLocalDensity::parse_file(char *filename) {
           if ((btype < 1) || (btype > atom->ntypes))
             throw TokenizerException("Invalid atom type filter value",std::to_string(btype));
           b[k][btype] = 1;
+        }
+
+        // parse partner atom filter
+        values = ValueTokenizer(reader.next_line());
+        while (values.has_next()) {
+          int btype = values.next_int();
+          if ((btype < 1) || (btype > atom->ntypes))
+            throw TokenizerException("Invalid atom type filter value",std::to_string(btype));
+          c[k][btype] = 1;
         }
 
         // parse min, max and delta rho values
@@ -797,6 +808,7 @@ void PairLocalDensity::parse_file(char *filename) {
   for (int k = 0; k < nLD; k++) {
       MPI_Bcast(&a[k][1], atom->ntypes, MPI_INT, 0, world);
       MPI_Bcast(&b[k][1], atom->ntypes, MPI_INT, 0, world);
+      MPI_Bcast(&c[k][1], atom->ntypes, MPI_INT, 0, world);
   }
   MPI_Bcast(&rho_min[0],  nLD, MPI_DOUBLE, 0, world);
   MPI_Bcast(&rho_max[0],  nLD, MPI_DOUBLE, 0, world);
