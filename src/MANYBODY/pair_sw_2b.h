@@ -13,24 +13,24 @@
 
 #ifdef PAIR_CLASS
 // clang-format off
-PairStyle(sw0,PairSW0);
+PairStyle(sw/2b,PairSW2B);
 // clang-format on
 #else
 
-#ifndef LMP_PAIR_SW0_H
-#define LMP_PAIR_SW0_H
+#ifndef LMP_PAIR_SW_2B_H
+#define LMP_PAIR_SW_2B_H
 
 #include "pair_sw.h"
 
 namespace LAMMPS_NS {
 
-class PairSW0 : public PairSW {
+class PairSW2B : public PairSW {
  public:
-  PairSW0(class LAMMPS *);
+  PairSW2B(class LAMMPS *);
   void compute(int, int) override;
 };
 
-}
+}    // namespace LAMMPS_NS
 
 #endif
 #endif

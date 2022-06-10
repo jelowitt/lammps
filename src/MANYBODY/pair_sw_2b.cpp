@@ -17,7 +17,7 @@
 ------------------------------------------------------------------------- */
 
 
-#include "pair_sw0.h"
+#include "pair_sw_2b.h"
 
 #include "atom.h"
 #include "comm.h"
@@ -37,11 +37,11 @@ using namespace MathConst;
 
 /* ---------------------------------------------------------------------- */
 
-PairSW0::PairSW0(LAMMPS *lmp) : PairSW(lmp) {}
+PairSW2B::PairSW2B(LAMMPS *lmp) : PairSW(lmp) {}
 
 /* ---------------------------------------------------------------------- */
 
-void PairSW0::compute(int eflag, int vflag)
+void PairSW2B::compute(int eflag, int vflag)
 {
   int i, j, ii, jj, inum, jnum;
   int itype, jtype, ijparam;
