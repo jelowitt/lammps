@@ -94,9 +94,8 @@ FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) :
   ngroups = 0;
   ngrouptypes = 0;
 
-  //
+  // VP Required
   pairflag = 0;
-  regionflag = 0;
 
   // required args
 
@@ -232,208 +231,20 @@ FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) :
 
   gcmc_nmax = 0;
   local_gas_list = nullptr;
-}
-
-/* ----------------------------------------------------------------------
-   parse optional parameters at end of input line
-------------------------------------------------------------------------- */
-
-void FixGCMCVP::options(int narg, char **arg)
-{
-  if (narg < 0) error->all(FLERR,"Illegal fix gcmc command");
-
-  // defaults
-
-  exchmode = EXCHATOM;
-  movemode = NONE;
-  patomtrans = 0.0;
-  pmoltrans = 0.0;
-  pmolrotate = 0.0;
-  pmctot = 0.0;
-  max_rotation_angle = 10*MY_PI/180;
-  region_volume = 0;
-  max_region_attempts = 1000;
-  molecule_group = 0;
-  molecule_group_bit = 0;
-  molecule_group_inversebit = 0;
-  exclusion_group = 0;
-  exclusion_group_bit = 0;
-  pressure_flag = false;
-  pressure = 0.0;
-  fugacity_coeff = 1.0;
-  rigidflag = 0;
-  shakeflag = 0;
-  charge = 0.0;
-  charge_flag = false;
-  full_flag = false;
-  ngroups = 0;
-  int ngroupsmax = 0;
-  groupstrings = nullptr;
-  ngrouptypes = 0;
-  int ngrouptypesmax = 0;
-  grouptypestrings = nullptr;
-  grouptypes = nullptr;
-  grouptypebits = nullptr;
-  energy_intra = 0.0;
-  tfac_insert = 1.0;
-  overlap_cutoffsq = 0.0;
-  overlap_flag = 0;
-  min_ngas = -1;
-  max_ngas = INT_MAX;
-
-  int iarg = 0;
-  while (iarg < narg) {
-  if (strcmp(arg[iarg],"mol") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      imol = atom->find_molecule(arg[iarg+1]);
-      if (imol == -1)
-        error->all(FLERR,"Molecule template ID for fix gcmc does not exist");
-      if (atom->molecules[imol]->nset > 1 && comm->me == 0)
-        error->warning(FLERR,"Molecule template for "
-                       "fix gcmc has multiple molecules");
-      exchmode = EXCHMOL;
-      onemols = atom->molecules;
-      nmol = onemols[imol]->nset;
-      iarg += 2;
-  } else if (strcmp(arg[iarg],"mcmoves") == 0) {
-      if (iarg+4 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      patomtrans = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      pmoltrans = utils::numeric(FLERR,arg[iarg+2],false,lmp);
-      pmolrotate = utils::numeric(FLERR,arg[iarg+3],false,lmp);
-      if (patomtrans < 0 || pmoltrans < 0 || pmolrotate < 0)
-        error->all(FLERR,"Illegal fix gcmc command");
-      pmctot = patomtrans + pmoltrans + pmolrotate;
-      if (pmctot <= 0)
-        error->all(FLERR,"Illegal fix gcmc command");
-      iarg += 4;
-    } else if (strcmp(arg[iarg],"region") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      region = domain->get_region_by_id(arg[iarg+1]);
-      if (!region)
-        error->all(FLERR,"Region {} for fix gcmc does not exist",arg[iarg+1]);
-      idregion = utils::strdup(arg[iarg+1]);
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"maxangle") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      max_rotation_angle = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      max_rotation_angle *= MY_PI/180;
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"pressure") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      pressure = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      pressure_flag = true;
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"fugacity_coeff") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      fugacity_coeff = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"charge") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      charge = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      charge_flag = true;
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"rigid") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      delete [] idrigid;
-      idrigid = utils::strdup(arg[iarg+1]);
-      rigidflag = 1;
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"shake") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      delete [] idshake;
-      idshake = utils::strdup(arg[iarg+1]);
-      shakeflag = 1;
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"full_energy") == 0) {
-      full_flag = true;
-      iarg += 1;
-    } else if (strcmp(arg[iarg],"group") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      if (ngroups >= ngroupsmax) {
-        ngroupsmax = ngroups+1;
-        groupstrings = (char **)
-          memory->srealloc(groupstrings,
-                           ngroupsmax*sizeof(char *),
-                           "fix_gcmc:groupstrings");
-      }
-      groupstrings[ngroups] = utils::strdup(arg[iarg+1]);
-      ngroups++;
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"grouptype") == 0) {
-      if (iarg+3 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      if (ngrouptypes >= ngrouptypesmax) {
-        ngrouptypesmax = ngrouptypes+1;
-        grouptypes = (int*) memory->srealloc(grouptypes,ngrouptypesmax*sizeof(int),
-                         "fix_gcmc:grouptypes");
-        grouptypestrings = (char**)
-          memory->srealloc(grouptypestrings,
-                           ngrouptypesmax*sizeof(char *),
-                           "fix_gcmc:grouptypestrings");
-      }
-      grouptypes[ngrouptypes] = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
-      grouptypestrings[ngrouptypes] = utils::strdup(arg[iarg+2]);
-      ngrouptypes++;
-      iarg += 3;
-    } else if (strcmp(arg[iarg],"intra_energy") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      energy_intra = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"tfac_insert") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      tfac_insert = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"overlap_cutoff") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      double rtmp = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      overlap_cutoffsq = rtmp*rtmp;
-      overlap_flag = 1;
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"min") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      min_ngas = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"max") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
-      max_ngas = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      iarg += 2;
-    } else error->all(FLERR,"Illegal fix gcmc command");
-  }
-}
-
-/* ---------------------------------------------------------------------- */
-
-FixGCMCVP::~FixGCMCVP()
-{
-  delete[] idregion;
-  delete random_equal;
-  delete random_unequal;
-
-  memory->destroy(local_gas_list);
-  memory->destroy(molcoords);
-  memory->destroy(molq);
-  memory->destroy(molimage);
-
-  delete[] idrigid;
-  delete[] idshake;
-
-  if (ngroups > 0) {
-    for (int igroup = 0; igroup < ngroups; igroup++)
-      delete[] groupstrings[igroup];
-    memory->sfree(groupstrings);
-  }
-
-  if (ngrouptypes > 0) {
-    memory->destroy(grouptypes);
-    memory->destroy(grouptypebits);
-    for (int igroup = 0; igroup < ngrouptypes; igroup++)
-      delete[] grouptypestrings[igroup];
-    memory->sfree(grouptypestrings);
-  }
-  if (full_flag && group) {
-    int igroupall = group->find("all");
-    neighbor->exclusion_group_group_delete(exclusion_group,igroupall);
-  }
-
+  
+  // VP Specific -- TODO I don't know why these values for the coeffs are chosen
+  if(pairflag==1){                 //pairflag stw definido en el lammps
+    pairsw = new PairSW(lmp);
+    char *a[6];
+    a[0] = "*";
+    a[1] = "*";
+    a[2] = "NaCl.sw";
+    a[3] = "mW";
+    a[4] = "Na";
+    a[5] = "Cl";
+    pairsw->coeff(6,a);
+    //printf("Este es el cut max %f/n",PairSW->cutmax);
+    } // Matias
 }
 
 /* ---------------------------------------------------------------------- */
@@ -491,7 +302,7 @@ void FixGCMCVP::init()
     }
   }
   
-  // Pair Flag management
+  // VP Specific -- Pair Flag management
   if (pairflag) {
     full_flag = false;
   }
@@ -658,9 +469,18 @@ void FixGCMCVP::init()
     zz = exp(beta*chemical_potential)/(pow(lambda,3.0));
   }
 
+  // TODO line 584-596 in old gcmc_vp changes ZZ based on pressure flag. Why?
   sigma = sqrt(force->boltz*reservoir_temperature*tfac_insert/gas_mass/force->mvv2e);
   if (pressure_flag) zz = pressure*fugacity_coeff*beta/force->nktv2p;
 
+  // VP Specific -- Matias' Fact 
+  if (comm->me == 0) {                                     
+    printf("zz factor equals %e\n", zz);                   
+    printf("regionflag equals %i\n", regionflag);          
+    printf("pressure_flag equals %i\n", pressure_flag);    
+    printf("pairflag equals %i\n", pairflag);              
+  }     
+  
   imagezero = ((imageint) IMGMAX << IMG2BITS) |
              ((imageint) IMGMAX << IMGBITS) | IMGMAX;
 
@@ -702,6 +522,112 @@ void FixGCMCVP::init()
     error->all(FLERR,"fix gcmc does currently not support full_energy "
                "option with molecule MC moves on more than 1 MPI process.");
 
+}
+
+/* ----------------------------------------------------------------------
+   attempt Monte Carlo translations, rotations, insertions, and deletions
+   done before exchange, borders, reneighbor
+   so that ghost atoms and neighbor lists will be correct
+------------------------------------------------------------------------- */
+
+void FixGCMC::pre_exchange()
+{
+  // just return if should not be called on this timestep
+
+  if (next_reneighbor != update->ntimestep) return;
+
+  xlo = domain->boxlo[0];
+  xhi = domain->boxhi[0];
+  ylo = domain->boxlo[1];
+  yhi = domain->boxhi[1];
+  zlo = domain->boxlo[2];
+  zhi = domain->boxhi[2];
+  if (triclinic) {
+    sublo = domain->sublo_lamda;
+    subhi = domain->subhi_lamda;
+  } else {
+    sublo = domain->sublo;
+    subhi = domain->subhi;
+  }
+
+  if (region) volume = region_volume;
+  else volume = domain->xprd * domain->yprd * domain->zprd;
+
+  if (triclinic) domain->x2lamda(atom->nlocal);
+  domain->pbc();
+  comm->exchange();
+  atom->nghost = 0;
+  comm->borders();
+  if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
+  update_gas_atoms_list();
+
+  if (full_flag) {
+    energy_stored = energy_full();
+    if (overlap_flag && energy_stored > MAXENERGYTEST)
+        error->warning(FLERR,"Energy of old configuration in "
+                       "fix gcmc is > MAXENERGYTEST.");
+
+    for (int i = 0; i < ncycles; i++) {
+      int ixm = static_cast<int>(random_equal->uniform()*ncycles) + 1;
+      if (ixm <= nmcmoves) {
+        double xmcmove = random_equal->uniform();
+        if (xmcmove < patomtrans) 
+          attempt_atomic_translation_full();
+        else if (xmcmove < patomtrans+pmoltrans)  
+          error->all(FLERR, "Cannot be used for molecule translation");
+        else  
+          error->all(FLERR, "Cannot be used for molecule rotation");
+      } else {
+        double xgcmc = random_equal->uniform();
+        if (exchmode == EXCHATOM) {
+          if (xgcmc < 0.5)  
+            attempt_atomic_deletion_full();
+          else  
+            attempt_atomic_insertion_full();
+        } else {
+          if (xgcmc < 0.5)  
+            error->all(FLERR, "Cannot be used for molecule deletion"); 
+          else  
+            error->all(FLERR, "Cannot be used for molecule insertion"); 
+        }
+      }
+    }
+    if (triclinic) domain->x2lamda(atom->nlocal);
+    domain->pbc();
+    comm->exchange();
+    atom->nghost = 0;
+    comm->borders();
+    if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
+
+  } else {
+    // TODO why are only the full molecule moves forbidden?
+    for (int i = 0; i < ncycles; i++) {  
+      int ixm = static_cast<int>(random_equal->uniform()*ncycles) + 1;
+      if (ixm <= nmcmoves) {
+        double xmcmove = random_equal->uniform();
+        if (xmcmove < patomtrans) 
+          attempt_atomic_translation();
+        else if (xmcmove < patomtrans+pmoltrans) 
+          attempt_molecule_translation();
+        else 
+          attempt_molecule_rotation();
+      } else {
+        double xgcmc = random_equal->uniform();
+        if (exchmode == EXCHATOM) {
+          if (xgcmc < 0.5) 
+            attempt_atomic_deletion();
+          else 
+            attempt_atomic_insertion();
+        } else {
+          if (xgcmc < 0.5) 
+            attempt_molecule_deletion();
+          else 
+            attempt_molecule_insertion();
+        }
+      }
+    }
+  }
+  next_reneighbor = update->ntimestep + nevery;
 }
 
 /* ----------------------------------------------------------------------

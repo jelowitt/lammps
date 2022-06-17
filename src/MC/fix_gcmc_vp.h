@@ -27,8 +27,9 @@ namespace LAMMPS_NS {
 class FixGCMCVP : public FixGCMC {
  public:
   FixGCMC(class LAMMPS *, int, char **);
-  void init() override;
-  void pre_exchange() override;
+  void init() override;            // Finished
+  void pre_exchange() override;    // Finished
+
   // Atomic
   void attempt_atomic_translation();
   void attempt_atomic_deletion();
@@ -55,8 +56,9 @@ class FixGCMCVP : public FixGCMC {
 
  private:
   // VP requirements
-  int pairflag;        // Pair style flag, 0=lj/cut, 1=SW
-  double energyout;    //
+  int pairflag;          // Pair style flag, 0=lj/cut, 1=SW
+  double energyout;      // Total energy change for compute vector
+  class Pair *pairsw;    // Pair class for Stw_GCMC
 
   int molecule_group, molecule_group_bit;
   int molecule_group_inversebit;
@@ -137,8 +139,6 @@ class FixGCMCVP : public FixGCMC {
   int triclinic;    // 0 = orthog box, 1 = triclinic
 
   class Compute *c_pe;
-
-  void options(int, char **);
 };
 
 }    // namespace LAMMPS_NS
