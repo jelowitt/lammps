@@ -574,9 +574,9 @@ void FixGCMC::pre_exchange()
         if (xmcmove < patomtrans) 
           attempt_atomic_translation_full();
         else if (xmcmove < patomtrans+pmoltrans)  
-          error->all(FLERR, "Cannot be used for molecule translation");
+          error->all(FLERR, "Cannot be used for full molecule translation");
         else  
-          error->all(FLERR, "Cannot be used for molecule rotation");
+          error->all(FLERR, "Cannot be used for full molecule rotation");
       } else {
         double xgcmc = random_equal->uniform();
         if (exchmode == EXCHATOM) {
@@ -586,9 +586,9 @@ void FixGCMC::pre_exchange()
             attempt_atomic_insertion_full();
         } else {
           if (xgcmc < 0.5)  
-            error->all(FLERR, "Cannot be used for molecule deletion"); 
+            error->all(FLERR, "Cannot be used for full molecule deletion"); 
           else  
-            error->all(FLERR, "Cannot be used for molecule insertion"); 
+            error->all(FLERR, "Cannot be used for full molecule insertion"); 
         }
       }
     }
