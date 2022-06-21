@@ -84,7 +84,6 @@ FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) :
   dynamic_group_allow = 1;
 
   vector_flag = 1;
-  size_vector = 9;  // Increased from 8 to 9 to include energyout in compute vector
   global_freq = 1;
   extvector = 0;
   restart_global = 1;
@@ -94,7 +93,9 @@ FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) :
   ngrouptypes = 0;
 
   // VP Required
-  pairflag = 0;
+  pairflag = false;
+  regionflag = false;
+  size_vector = 9;  // Increased from 8 to 9 to include energyout in compute vector
 
   // required args
 
@@ -232,7 +233,7 @@ FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) :
   local_gas_list = nullptr;
   
   // VP Specific -- TODO I don't know why these values for the coeffs are chosen
-  if(pairflag==1){                 //pairflag stw definido en el lammps
+  if (pairflag) {  //pairflag stw definido en el lammps
     pairsw = new PairSW(lmp);
     char *a[6];
     a[0] = "*";
@@ -658,9 +659,9 @@ void FixGCMCVP::attempt_atomic_deletion()
              "gcmc command\natom->type[i=%d] = %d ngcmc_type = %d\n",
              i, atom->type[i], ngcmc_type);    // added by Jibao
 
-    if (pairflag == 0) {
+    if (pairflag) {
       deletion_energy = energy(i, ngcmc_type, -1, atom->x[i]);
-    } else if (pairflag == 1) {
+    } else if (!pairflag) {
       pair = force->pair;    //force obtejo que tiene pair           // Matias
       deletion_energy = pairsw->Stw_GCMC(i, ngcmc_type, 1, atom->x[i]);    // Matias
     }
@@ -1267,9 +1268,9 @@ void FixGCMC::options(int narg, char **arg)
     } else if (strcmp(arg[iarg], "pair") == 0) {
       if (iarg + 2 > narg) error->all(FLERR, "Illegal fix GCMC command");
       if (strcmp(arg[iarg + 1], "lj/cut") == 0)
-        pairflag = 0;
+        pairflag = false;
       else if (strcmp(arg[iarg + 1], "Stw") == 0)
-        pairflag = 1;
+        pairflag = true;
       else
         error->all(FLERR, "Illegal fix evaporate command");
       iarg += 2;
