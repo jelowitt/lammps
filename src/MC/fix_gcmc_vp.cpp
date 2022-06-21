@@ -71,10 +71,6 @@ enum{NONE,MOVEATOM,MOVEMOL}; // movemode
 /* ---------------------------------------------------------------------- */
 
 FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) :
-  region(nullptr), idregion(nullptr), full_flag(false), groupstrings(nullptr),
-  grouptypestrings(nullptr), grouptypebits(nullptr), grouptypes(nullptr), local_gas_list(nullptr),
-  molcoords(nullptr), molq(nullptr), molimage(nullptr), random_equal(nullptr), random_unequal(nullptr),
-  fixrigid(nullptr), fixshake(nullptr), idrigid(nullptr), idshake(nullptr)
 {
   if (narg < 11) error->all(FLERR,"Illegal fix gcmc command");
 
