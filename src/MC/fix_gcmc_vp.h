@@ -50,6 +50,7 @@ class FixGCMCVP : public FixGCMC {
   double compute_vector(int) override;
 
  private:
+ 
   // VP requirements
   class Pair *pairsw;    // Pair class for Stw_GCMC
   double energyout;      // Total energy change for compute vector
