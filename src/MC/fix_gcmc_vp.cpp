@@ -805,18 +805,40 @@ void FixGCMCVP::attempt_atomic_insertion()
   }
 
   int success = 0;
+
+  // VP Specific
+  double energy_all = 0;      // from Matias; added by Jibao
+  int proc_id = -2;           // from Matias; added by Jibao
+  double insertion_energy;    // added by Jibao
+
   if (proc_flag) {
+
+    // VP specific
+    int nall = atom->nmax;
+
     int ii = -1;
     if (charge_flag) {
       ii = atom->nlocal + atom->nghost;
       if (ii >= atom->nmax) atom->avec->grow(0);
       atom->q[ii] = charge;
     }
-    double insertion_energy = energy(ii,ngcmc_type,-1,coord);
 
-    if (insertion_energy < MAXENERGYTEST &&
-        random_unequal->uniform() <
-        zz*volume*exp(-beta*insertion_energy)/(ngas+1)) {
+    // VP Specific
+    //double insertion_energy = energy(ii,ngcmc_type,-1,coord); // commented out by Jibao
+
+    if (!pairflag) {                                           // from Matias; added by Jibao
+      insertion_energy = energy(ii,ngcmc_type,-1,coord);       // from version 2015; added by Jibao
+    } else if (pairflag) {                                     // from Matias; added by Jibao
+      pair = force->pair;                                      // from Matias; added by Jibao
+      insertion_energy =pairsw->Stw_GCMC(nall,ngcmc_type,1,coord);  // from Matias; added by Jibao
+    }
+    energy_all = insertion_energy;    // from Matias; added by Jibao
+    proc_id = comm->me;               // from Matias; added by Jibao
+    // END VP Specific
+
+    if (insertion_energy < MAXENERGYTEST && 
+        random_unequal->uniform() < zz*volume*exp(-beta*insertion_energy)/(ngas+1)) {
+
       atom->avec->create_atom(ngcmc_type,coord);
       int m = atom->nlocal - 1;
 
@@ -840,6 +862,11 @@ void FixGCMCVP::attempt_atomic_insertion()
 
   int success_all = 0;
   MPI_Allreduce(&success,&success_all,1,MPI_INT,MPI_MAX,world);
+
+  // VP Specific
+  MPI_Allreduce(&proc_id, &proc_end, 1, MPI_INT, MPI_MAX, world);    // from Matias; added by Jibao
+  MPI_Bcast(&energy_all, 1, MPI_DOUBLE, proc_end, world);            // from Matias; added by Jibao
+  energyout = energy_all;                                            // from Matias; added by Jibao
 
   if (success_all) {
     atom->natoms++;
