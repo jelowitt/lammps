@@ -24,7 +24,7 @@ FixStyle(gcmc/vp,FixGCMCVP);
 
 namespace LAMMPS_NS {
 
-class FixGCMCVP : public FixGCMC {
+class FixGCMCVP : public FixGCMC, public Fix {
  public:
   FixGCMCVP(class LAMMPS *, int, char **);
 
