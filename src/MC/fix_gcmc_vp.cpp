@@ -532,7 +532,7 @@ void FixGCMCVP::init()
    so that ghost atoms and neighbor lists will be correct
 ------------------------------------------------------------------------- */
 
-void FixGCMC::pre_exchange()
+void FixGCMCVP::pre_exchange()
 {
   // just return if should not be called on this timestep
 
@@ -1095,7 +1095,7 @@ double FixGCMCVP::compute_vector(int n)
    update the list of gas atoms
 ------------------------------------------------------------------------- */
 
-void FixGCMC::update_gas_atoms_list()
+void FixGCMCVP::update_gas_atoms_list()
 {
   int nlocal = atom->nlocal;
   int *mask = atom->mask;
@@ -1185,7 +1185,7 @@ void FixGCMC::update_gas_atoms_list()
 /* ----------------------------------------------------------------------
 ------------------------------------------------------------------------- */
 
-void FixGCMC::options(int narg, char **arg)
+void FixGCMCVP::options(int narg, char **arg)
 {
   if (narg < 0) error->all(FLERR,"Illegal fix gcmc command");
 
