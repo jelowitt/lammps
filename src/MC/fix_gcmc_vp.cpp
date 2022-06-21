@@ -1276,7 +1276,7 @@ void FixGCMC::options(int narg, char **arg)
       iarg += 2;
     }    
     
-    } else if (strcmp(arg[iarg],"pressure") == 0) {
+    else if (strcmp(arg[iarg],"pressure") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
       pressure = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       pressure = pressure * 100.0;    // VP Specifc added by Jibao, according to Matias' code
@@ -1358,4 +1358,3 @@ void FixGCMC::options(int narg, char **arg)
     } else error->all(FLERR,"Illegal fix gcmc command");
   }
 }
-
