@@ -33,7 +33,6 @@ class FixGCMCVP : public FixGCMC {
   void update_gas_atoms_list();    // Finished
 
   // Atomic
-  void attempt_atomic_translation();
   void attempt_atomic_deletion();     // Finished
   void attempt_atomic_insertion();    // Finished
 
