@@ -28,26 +28,26 @@ class FixGCMCVP : public FixGCMC {
  public:
   FixGCMCVP(class LAMMPS *, int, char **);
 
-  void init() override;            // Finished
-  void pre_exchange() override;    // Finished
-  void update_gas_atoms_list();    // Finished
+  void init() override;
+  void pre_exchange() override;
+  void update_gas_atoms_list();
 
   // Atomic
-  void attempt_atomic_deletion();     // Finished
-  void attempt_atomic_insertion();    // Finished
+  void attempt_atomic_deletion();
+  void attempt_atomic_insertion();
 
   // Atomic Full
-  void attempt_atomic_deletion_full();    // Finished
+  void attempt_atomic_deletion_full();
   void attempt_atomic_insertion_full();
 
   // Forbidden Moves
-  void attempt_atomic_translation_full() {}      // Finished
-  void attempt_molecule_translation_full() {}    // Finished
-  void attempt_molecule_rotation_full() {}       // Finished
-  void attempt_molecule_deletion_full() {}       // Finished
-  void attempt_molecule_insertion_full() {}      // Finished
+  void attempt_atomic_translation_full() {}
+  void attempt_molecule_translation_full() {}
+  void attempt_molecule_rotation_full() {}
+  void attempt_molecule_deletion_full() {}
+  void attempt_molecule_insertion_full() {}
 
-  double compute_vector(int) override;    // Finished
+  double compute_vector(int) override;
 
  private:
   // VP requirements
