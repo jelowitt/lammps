@@ -458,20 +458,25 @@ void FixGCMCVP::init()
   }
 
   // compute beta, lambda, sigma, and the zz factor
-  // For LJ units, lambda=1
+
   beta = 1.0/(force->boltz*reservoir_temperature);
-  if (strcmp(update->unit_style,"lj") == 0)
-    zz = exp(beta*chemical_potential);
-  else {
-    double lambda = sqrt(force->hplanck*force->hplanck/
-                         (2.0*MY_PI*gas_mass*force->mvv2e*
-                        force->boltz*reservoir_temperature));
-    zz = exp(beta*chemical_potential)/(pow(lambda,3.0));
+  double lambda = sqrt(force->hplanck*force->hplanck/
+                        (2.0*MY_PI*gas_mass*force->mvv2e*
+                      force->boltz*reservoir_temperature));
+  zz = exp(beta*chemical_potential)/(pow(lambda,3.0));
+
+
+  if (!pressure_flag)    // using pressure_flag to replace pressflag defined by Matias
+    zz = exp(beta * chemical_potential) / (pow(lambda, 3.0));
+  else if (pressure_flag) {
+    zz = pressure / (force->boltz * 4.184 * reservoir_temperature * 1000 / 6.02e23) /
+        (1e30);    // from Matias; need to check the meaning
+    //zz = pressure*fugacity_coeff*beta/force->nktv2p;    // from the original expression of 2015 version of lammps
   }
 
   // TODO line 584-596 in old gcmc_vp changes ZZ based on pressure flag. Why?
-  sigma = sqrt(force->boltz*reservoir_temperature*tfac_insert/gas_mass/force->mvv2e);
-  if (pressure_flag) zz = pressure*fugacity_coeff*beta/force->nktv2p;
+  // sigma = sqrt(force->boltz*reservoir_temperature*tfac_insert/gas_mass/force->mvv2e);
+  // if (pressure_flag) zz = pressure*fugacity_coeff*beta/force->nktv2p;
 
   // VP Specific -- Matias' Fact 
   if (comm->me == 0) {                                     
