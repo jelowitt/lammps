@@ -70,7 +70,7 @@ enum{NONE,MOVEATOM,MOVEMOL}; // movemode
 
 /* ---------------------------------------------------------------------- */
 
-FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) : public FixGCMC(lmp, narg, arg)
+FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) : FixGCMC(lmp, narg, arg)
 {
   if (narg < 11) error->all(FLERR,"Illegal fix gcmc command");
 
