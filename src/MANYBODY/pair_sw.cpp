@@ -581,10 +581,11 @@ double PairSW::Stw_GCMC(int i,int ntype,int eflag, double *coord)
       //if (comm->me == 0) printf("j = %d in two-body part in Stw_GCMC()\n",j);    // added by Jibao
       rsq = delx*delx + dely*dely + delz*delz;
       jtype=map[type[j]];
-      ijparam = elem2param[itype][jtype][jtype];
+      ijparam = elem3param[itype][jtype][jtype];
       
       if (rsq < params[ijparam].cutsq){
-          twobody(&params[ijparam],rsq,fpair,eflag,tmp2body);        twobodyeng+=tmp2body;
+          twobody(&params[ijparam],rsq,fpair,eflag,tmp2body);        
+          twobodyeng+=tmp2body;
           //printf("# %d %d %d %d %d %f %e\n",ntype,type[j],itype,jtype,ijparam,params[ijparam].epsilon,tmp2body);
       }
       
@@ -596,7 +597,7 @@ double PairSW::Stw_GCMC(int i,int ntype,int eflag, double *coord)
       if (ii == i) continue;
       
       itype= map[type[ii]];
-      ijparam = elem2param[itype][jtype][jtype];
+      ijparam = elem3param[itype][jtype][jtype];
       
       delr1[0] = coord[0] - x[ii][0];
       delr1[1] = coord[1] - x[ii][1];
@@ -611,8 +612,8 @@ double PairSW::Stw_GCMC(int i,int ntype,int eflag, double *coord)
           delr2[0] = x[k][0] - x[ii][0];
           delr2[1] = x[k][1] - x[ii][1];
           delr2[2] = x[k][2] - x[ii][2];
-          ikparam = elem2param[itype][ktype][ktype];
-          ijkparam = elem2param[itype][jtype][ktype];
+          ikparam = elem3param[itype][ktype][ktype];
+          ijkparam = elem3param[itype][jtype][ktype];
           rsq2 = delr2[0]*delr2[0] + delr2[1]*delr2[1] + delr2[2]*delr2[2];
           if (rsq2 > params[ikparam].cutsq) continue;
           threebody(&params[ijparam],&params[ikparam],&params[ijkparam],rsq1,rsq2,delr1,delr2,fj,fk,eflag,tmp3body);
@@ -627,7 +628,7 @@ double PairSW::Stw_GCMC(int i,int ntype,int eflag, double *coord)
   for (int j = 0; j < nall; j++){
       if (i == j) continue;
       jtype = map[type[j]];
-      ijparam = elem2param[itype][jtype][jtype];
+      ijparam = elem3param[itype][jtype][jtype];
       
       delr1[0] = x[j][0] - coord[0];
       delr1[1] = x[j][1] - coord[1];
@@ -638,8 +639,8 @@ double PairSW::Stw_GCMC(int i,int ntype,int eflag, double *coord)
       for (int k = j; k < nall; k++) {
           if (i==k || k == j ) continue;
           ktype = map[type[k]];
-          ikparam = elem2param[itype][ktype][ktype];
-          ijkparam = elem2param[itype][jtype][ktype];
+          ikparam = elem3param[itype][ktype][ktype];
+          ijkparam = elem3param[itype][jtype][ktype];
           
           delr2[0] = x[k][0] - coord[0];
           delr2[1] = x[k][1] - coord[1];
