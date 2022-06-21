@@ -42,10 +42,10 @@ class FixGCMCVP : public FixGCMC {
   void attempt_atomic_insertion_full();
 
   // Molecule
-  void attempt_molecule_translation();
-  void attempt_molecule_rotation();
-  void attempt_molecule_deletion();
-  void attempt_molecule_insertion();
+  void attempt_molecule_translation();    // Finished
+  void attempt_molecule_rotation();       // Finished
+  void attempt_molecule_deletion();       // Finished
+  void attempt_molecule_insertion();      // Finished
 
   // Forbidden Moves
   void attempt_atomic_translation_full() {}      // Finished
