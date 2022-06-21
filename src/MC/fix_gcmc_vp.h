@@ -35,7 +35,7 @@ class FixGCMCVP : public FixGCMC {
   // Atomic
   void attempt_atomic_translation();
   void attempt_atomic_deletion();
-  void attempt_atomic_insertion();
+  void attempt_atomic_insertion();    // Finished
 
   // Atomic Full
   void attempt_atomic_deletion_full();    // Finished
