@@ -160,6 +160,13 @@ class Pair : protected Pointers {
     return 0.0;
   }
 
+  // VP specific
+  // from Matias; added by Jibao
+  virtual double Stw_GCMC(int,int,int, double *) 
+  {
+    return 0.0;
+  } 
+
   void hessian_twobody(double fforce, double dfac, double delr[3], double phiTensor[6]);
 
   virtual double single_hessian(int, int, int, int, double, double[3], double, double,
