@@ -33,6 +33,9 @@ class PairSW : public Pair {
   double init_one(int, int) override;
   void init_style() override;
 
+  // VP Specific -- added by Jibao
+  double Stw_GCMC(int,int,int, double *);
+
   static constexpr int NPARAMS_PER_LINE = 14;
 
   struct Param {
