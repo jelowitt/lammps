@@ -813,6 +813,11 @@ void FixGCMCVP::attempt_atomic_insertion()
   }
 
   int success_all = 0;
+
+  // VP Specific
+  int proc_end = 0;   // from Matias; added by Jibao
+  MPI_Barrier(world); // from Matias; added by Jibao
+
   MPI_Allreduce(&success,&success_all,1,MPI_INT,MPI_MAX,world);
 
   // VP Specific
