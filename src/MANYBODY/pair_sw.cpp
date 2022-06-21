@@ -539,10 +539,9 @@ double PairSW::Stw_GCMC(int i,int ntype,int eflag, double *coord)
   
   //i = 7;  // debug; added by Jibao
   //if (comm->me == 0) printf("beginning of Stw_GCMC(); i = %d\n",i);    // added by Jibao
-  int i,j,k,ii,jj,kk,inum,jnum,jnumm1;
+  int inum;
   int itype,jtype,ktype,ijparam,ikparam,ijkparam;
-  tagint itag,jtag;
-  double xtmp,ytmp,ztmp,delx,dely,delz,evdwl,fpair;
+  double delx,dely,delz,evdwl,fpair;
   double rsq,rsq1,rsq2;
   double delr1[3],delr2[3],fj[3],fk[3];
   int *ilist,*jlist,*numneigh,**firstneigh;
@@ -551,9 +550,6 @@ double PairSW::Stw_GCMC(int i,int ntype,int eflag, double *coord)
   int *type = atom->type;
   int nall = atom->nlocal + atom->nghost;
   int newton_pair = force->newton_pair;
-  int jj,kk;
-  
-  int *ilist,*jlist,*numneigh,**firstneigh,inum;
   
   inum = list->inum;
   ilist = list->ilist;
@@ -596,15 +592,19 @@ double PairSW::Stw_GCMC(int i,int ntype,int eflag, double *coord)
   //if (comm->me == 0) printf("after two-body part in Stw_GCMC()\n");    // added by Jibao
   //first possibility ii!=i j==i k!=i or ii!=i; j!=i ; k==i
   jtype=map[ntype];
-  for(int ii = 0;ii < nall;ii++){
-      if (ii==i) continue;
+  for(int ii = 0; ii < nall; ii++){
+      if (ii == i) continue;
+      
       itype= map[type[ii]];
       ijparam = elem2param[itype][jtype][jtype];
+      
       delr1[0] = coord[0] - x[ii][0];
       delr1[1] = coord[1] - x[ii][1];
       delr1[2] = coord[2] - x[ii][2];
       rsq1 = delr1[0]*delr1[0] + delr1[1]*delr1[1] + delr1[2]*delr1[2];
+      
       if (rsq1 > params[ijparam].cutsq) continue;
+      
       for (int k = 0; k < nall; k++){
           if (ii==k || k==i) continue;
           ktype = map[type[k]];
@@ -625,23 +625,28 @@ double PairSW::Stw_GCMC(int i,int ntype,int eflag, double *coord)
   //second possibility ii==i j!=i k!=i
   itype=map[ntype];
   for (int j = 0; j < nall; j++){
-      if (i==j) continue;
+      if (i == j) continue;
       jtype = map[type[j]];
       ijparam = elem2param[itype][jtype][jtype];
+      
       delr1[0] = x[j][0] - coord[0];
       delr1[1] = x[j][1] - coord[1];
       delr1[2] = x[j][2] - coord[2];
       rsq1 = delr1[0]*delr1[0] + delr1[1]*delr1[1] + delr1[2]*delr1[2];
       if (rsq1 > params[ijparam].cutsq) continue;
+      
       for (int k = j; k < nall; k++) {
           if (i==k || k == j ) continue;
           ktype = map[type[k]];
           ikparam = elem2param[itype][ktype][ktype];
           ijkparam = elem2param[itype][jtype][ktype];
+          
           delr2[0] = x[k][0] - coord[0];
           delr2[1] = x[k][1] - coord[1];
           delr2[2] = x[k][2] - coord[2];
+          
           rsq2 = delr2[0]*delr2[0] + delr2[1]*delr2[1] + delr2[2]*delr2[2];
+          
           if (rsq2 > params[ikparam].cutsq) continue;
           threebody(&params[ijparam],&params[ikparam],&params[ijkparam],rsq1,rsq2,delr1,delr2,fj,fk,eflag,tmp3body);
           threebodyeng+=tmp3body;
