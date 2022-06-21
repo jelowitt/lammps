@@ -93,8 +93,6 @@ FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) :
   ngrouptypes = 0;
 
   // VP Required
-  pairflag = false;
-  regionflag = false;
   size_vector = 9;  // Increased from 8 to 9 to include energyout in compute vector
 
   // required args
