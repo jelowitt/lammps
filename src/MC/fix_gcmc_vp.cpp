@@ -1196,13 +1196,29 @@ void FixGCMCVP::attempt_atomic_deletion_full()
   double q_tmp;
   const int q_flag = atom->q_flag;
 
+  // VP specific
+  int success = 0;
+  double deletion_energy = 0.0;
+  const int i = pick_random_gas_atom();
+  double energy_before = 0.0;
+
   ndeletion_attempts += 1.0;
 
   if (ngas == 0 || ngas <= min_ngas) return;
 
-  double energy_before = energy_stored;
-
-  const int i = pick_random_gas_atom();
+  if (!pairflag) {
+    energy_before = energy_stored;
+  } else {
+    if (i >= 0){
+      pair = force->pair;
+      deletion_energy = pairsw->Stw_GCMC(i, ngcmc_type, 1, atom->x[i]);
+      
+      // Debugging VP
+      if (comm->me == 0) {
+        printf("deletion_energy=pairsw->Stw_GCMC() = %f, i = %d  ",deletion_energy,i);
+      }
+    }
+  }
 
   int tmpmask;
   if (i >= 0) {
@@ -1213,29 +1229,90 @@ void FixGCMCVP::attempt_atomic_deletion_full()
       atom->q[i] = 0.0;
     }
   }
+
   if (force->kspace) force->kspace->qsum_qsq();
   if (force->pair->tail_flag) force->pair->reinit();
-  double energy_after = energy_full();
 
-  if (random_equal->uniform() <
-      ngas*exp(beta*(energy_before - energy_after))/(zz*volume)) {
-    if (i >= 0) {
-      atom->avec->copy(atom->nlocal-1,i,1);
-      atom->nlocal--;
+  // VP Specific
+  double energy_after = 0.0;       // added by Jibao
+  energy_after = energy_full();    // debug; Jibao
+
+  if (!pairflag) {
+    if (random_equal->uniform() <
+        ngas*exp(beta*(energy_before - energy_after))/(zz*volume)) {
+      if (i >= 0) {
+        atom->avec->copy(atom->nlocal-1,i,1);
+        atom->nlocal--;
+      }
+      atom->natoms--;
+      if (atom->map_style != Atom::MAP_NONE) atom->map_init();
+      ndeletion_successes += 1.0;
+      energy_stored = energy_after;
+    } else {
+      if (i >= 0) {
+        atom->mask[i] = tmpmask;
+        if (q_flag) atom->q[i] = q_tmp;
+      }
+      if (force->kspace) force->kspace->qsum_qsq();
+      if (force->pair->tail_flag) force->pair->reinit();
+      energy_stored = energy_before;
     }
-    atom->natoms--;
-    if (atom->map_style != Atom::MAP_NONE) atom->map_init();
-    ndeletion_successes += 1.0;
-    energy_stored = energy_after;
-  } else {
+  } else { // VP Specific
+    double energy_all = 0;    // from Matias; added by Jibao
+    int proc_id = -2;         // from Matias; added by Jibao
+
+    energy_all = deletion_energy;    // from Matias; added by Jibao
+    proc_id = comm->me;              // from Matias; added by Jibao
+
     if (i >= 0) {
-      atom->mask[i] = tmpmask;
-      if (q_flag) atom->q[i] = q_tmp;
+      if (random_unequal->uniform() < ngas * exp(beta * deletion_energy) / (zz * volume)) {
+        /*
+                 printf("proc %d: deletion_energy = %f\n",comm->me,deletion_energy);
+                 if (comm->me == 0) {
+                 printf("random_unequal->uniform() < ngas*exp(beta*deletion_energy)/(zz*volume) satisfied: deletion_energy= %f, i = %d\n",deletion_energy,i);
+                 }   // added by Jibao
+                 */
+
+        atom->avec->copy(atom->nlocal - 1, i, 1);
+        atom->nlocal--;
+
+        success = 1;
+      }
     }
-    if (force->kspace) force->kspace->qsum_qsq();
-    if (force->pair->tail_flag) force->pair->reinit();
-    energy_stored = energy_before;
-  }
+
+    int success_all = 0;
+
+    int proc_end = 0;      // from Matias; added by Jibao
+    MPI_Barrier(world);    // from Matias; added by Jibao
+    MPI_Allreduce(&success, &success_all, 1, MPI_INT, MPI_MAX, world);
+    MPI_Allreduce(&proc_id, &proc_end, 1, MPI_INT, MPI_MAX,world);    // from Matias; added by Jibao
+    MPI_Bcast(&energy_all, 1, MPI_DOUBLE, proc_end, world);    // from Matias; added by Jibao
+
+    energyout = energy_all;    // from Matias; added by Jibao
+
+    if (success_all) {
+      atom->natoms--;
+
+      if (atom->tag_enable) {
+        if (atom->map_style) atom->map_init();
+      }
+
+      // I don't know why to set nghost to zero; need to check it!!!!!!! 
+      // added and commentted by Jibao
+      atom->nghost = 0;    
+      comm->borders();
+      ndeletion_successes += 1.0;
+
+    } else {
+      
+      if (i >= 0) {
+        atom->mask[i] = tmpmask;
+        if (q_flag) atom->q[i] = q_tmp;
+      }
+      
+      if (force->kspace) force->kspace->qsum_qsq();
+    }
+  }    // modified by Jibao
   update_gas_atoms_list();
 }
 
