@@ -26,9 +26,11 @@ namespace LAMMPS_NS {
 
 class FixGCMCVP : public FixGCMC {
  public:
-  FixGCMC(class LAMMPS *, int, char **);
+  FixGCMCVP(class LAMMPS *, int, char **);
+
   void init() override;            // Finished
   void pre_exchange() override;    // Finished
+  void update_gas_atoms_list();    // Finished
 
   // Atomic
   void attempt_atomic_translation();
@@ -36,7 +38,7 @@ class FixGCMCVP : public FixGCMC {
   void attempt_atomic_insertion();
 
   // Atomic Full
-  void attempt_atomic_deletion_full();
+  void attempt_atomic_deletion_full();    // Finished
   void attempt_atomic_insertion_full();
 
   // Molecule
