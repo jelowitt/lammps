@@ -54,8 +54,8 @@ class FixGCMCVP : public FixGCMC {
   // VP requirements
   class Pair *pairsw;    // Pair class for Stw_GCMC
   double energyout;      // Total energy change for compute vector
-  bool pairflag= false;;         // Pair style flag, false=lj/cut, true=SW
-  bool regionflag= false;;       // False = anywhere in box, True = specific region
+  bool pairflag = false;         // Pair style flag, false=lj/cut, true=SW
+  bool regionflag= false;       // False = anywhere in box, True = specific region
 
   int molecule_group, molecule_group_bit;
   int molecule_group_inversebit;

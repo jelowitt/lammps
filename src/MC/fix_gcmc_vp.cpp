@@ -1091,7 +1091,7 @@ double FixGCMCVP::compute_vector(int n)
   if (n == 5) return ndeletion_successes;
   if (n == 6) return nrotation_attempts;
   if (n == 7) return nrotation_successes;
-  if (n == 8) return energy_out;
+  if (n == 8) return energyout;
   return 0.0;
 }
 
@@ -1274,9 +1274,9 @@ void FixGCMC::options(int narg, char **arg)
     } else if (strcmp(arg[iarg], "pair") == 0) {
       if (iarg + 2 > narg) error->all(FLERR, "Illegal fix GCMC command");
       if (strcmp(arg[iarg + 1], "lj/cut") == 0)
-        pairflag = false;
+        bool pairflag = false;
       else if (strcmp(arg[iarg + 1], "Stw") == 0)
-        pairflag = true;
+        bool pairflag = true;
       else
         error->all(FLERR, "Illegal fix evaporate command");
       iarg += 2;
