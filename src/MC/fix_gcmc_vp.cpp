@@ -707,7 +707,7 @@ void FixGCMCVP::attempt_atomic_translation()
 /* ----------------------------------------------------------------------
 ------------------------------------------------------------------------- */
 
-void FixGCMCVP::attempt_atomic_deletion()  // TODO Needs Changes
+void FixGCMCVP::attempt_atomic_deletion() 
 {
   ndeletion_attempts += 1.0;
 
@@ -716,11 +716,31 @@ void FixGCMCVP::attempt_atomic_deletion()  // TODO Needs Changes
   int i = pick_random_gas_atom();
 
   int success = 0;
+
+  // VP Specific
+  double energy_all = 0;     // Matias
+  int proc_id = -2;          // Matias
+  double deletion_energy;    // added by Jibao
+
   if (i >= 0) {
-    double deletion_energy = energy(i,ngcmc_type,-1,atom->x[i]);
-    if (random_unequal->uniform() <
-        ngas*exp(beta*deletion_energy)/(zz*volume)) {
-      atom->avec->copy(atom->nlocal-1,i,1);
+    if (atom->type[i] != ngcmc_type)
+      printf("you are trying to delete an atom of type different from the one specified in fix "
+             "gcmc command\natom->type[i=%d] = %d ngcmc_type = %d\n",
+             i, atom->type[i], ngcmc_type);    // added by Jibao
+
+    if (pairflag == 0) {
+      deletion_energy = energy(i, ngcmc_type, -1, atom->x[i]);
+    } else if (pairflag == 1) {
+      pair = force->pair;    //force obtejo que tiene pair           // Matias
+      deletion_energy = pairsw->Stw_GCMC(i, ngcmc_type, 1, atom->x[i]);    // Matias
+    }
+
+    energy_all = deletion_energy;    // Matias
+    proc_id = comm->me;              // Matias
+
+    //double deletion_energy = energy(i,ngcmc_type,-1,atom->x[i]);  // commented out by Jibao
+    if (random_unequal->uniform() < ngas * exp(beta * deletion_energy) / (zz * volume)) {
+      atom->avec->copy(atom->nlocal - 1, i, 1);
       atom->nlocal--;
       success = 1;
     }
@@ -735,7 +755,7 @@ void FixGCMCVP::attempt_atomic_deletion()  // TODO Needs Changes
       if (atom->map_style != Atom::MAP_NONE) atom->map_init();
     }
     atom->nghost = 0;
-    if (triclinic) domain->x2lamda(atom->nlocal);
+    if (triclinic) domain->x2lamda(atom->nlocal); 
     comm->borders();
     if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
     update_gas_atoms_list();
