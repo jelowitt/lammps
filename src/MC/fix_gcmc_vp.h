@@ -29,7 +29,7 @@ class FixGCMCVP : public FixGCMC {
   FixGCMCVP(class LAMMPS *, int, char **);
 
   void init() override;
-  void pre_exchange() override;
+  void pre_exchange();
   void update_gas_atoms_list();
 
   // Atomic
