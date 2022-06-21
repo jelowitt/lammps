@@ -229,6 +229,9 @@ FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) :
   ninsertion_attempts = 0.0;
   ninsertion_successes = 0.0;
 
+  // VP specific
+  energyout = 0;
+
   gcmc_nmax = 0;
   local_gas_list = nullptr;
   
