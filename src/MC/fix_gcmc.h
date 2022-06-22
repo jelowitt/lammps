@@ -139,7 +139,7 @@ class FixGCMC : public Fix {
 
   class Compute *c_pe;
 
-  void options(int, char **);
+  virtual void options(int, char **);
 };
 
 }    // namespace LAMMPS_NS
