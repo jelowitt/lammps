@@ -72,7 +72,7 @@ enum{NONE,MOVEATOM,MOVEMOL}; // movemode
 
 FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) : FixGCMC(lmp, narg, arg)
 {
-  if (narg < 11) error->all(FLERR,"Illegal fix gcmc command");
+  if (narg < 11) error->all(FLERR,"Illegal fix gcmc command: Too few args ({})", narg);
 
   if (atom->molecular == Atom::TEMPLATE)
     error->all(FLERR,"Fix gcmc does not (yet) work with atom_style template");
@@ -102,13 +102,12 @@ FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) : FixGCMC(lmp, narg, arg
   chemical_potential = utils::numeric(FLERR,arg[9],false,lmp);
   displace = utils::numeric(FLERR,arg[10],false,lmp);
 
-  if (nevery <= 0) error->all(FLERR,"Illegal fix gcmc command");
-  if (nexchanges < 0) error->all(FLERR,"Illegal fix gcmc command");
-  if (nmcmoves < 0) error->all(FLERR,"Illegal fix gcmc command");
-  if (seed <= 0) error->all(FLERR,"Illegal fix gcmc command");
-  if (reservoir_temperature < 0.0) 
-    error->all(FLERR,"Illegal fix gcmc command");
-  if (displace < 0.0) error->all(FLERR,"Illegal fix gcmc command");
+  if (nevery <= 0) error->all(FLERR,"Illegal fix gcmc command: nevery <= 0");
+  if (nexchanges < 0) error->all(FLERR,"Illegal fix gcmc command: nexchanges < 0");
+  if (nmcmoves < 0) error->all(FLERR,"Illegal fix gcmc command: nmcmoves < 0");
+  if (seed <= 0) error->all(FLERR,"Illegal fix gcmc command: seed <= 0");
+  if (reservoir_temperature < 0.0) error->all(FLERR,"Illegal fix gcmc command: resivoir_temperature < 0.0");
+  if (displace < 0.0) error->all(FLERR,"Illegal fix gcmc command: displace < 0.0");
 
   // read options from end of input line
 
@@ -371,8 +370,7 @@ void FixGCMCVP::init()
     fixshake = modify->fix[ifix];
     int tmp;
     if (&onemols[imol] != (Molecule **) fixshake->extract("onemol",tmp))
-      error->all(FLERR,"Fix gcmc and fix shake not using "
-                 "same molecule template ID");
+      error->all(FLERR,"Fix gcmc and fix shake not using same molecule template ID");
   }
 
   if (domain->dimension == 2)
@@ -489,8 +487,7 @@ void FixGCMCVP::init()
   // warning if group id is "all"
 
   if ((comm->me == 0) && (groupbit & 1))
-    error->warning(FLERR, "Fix gcmc is being applied "
-                   "to the default group all");
+    error->warning(FLERR, "Fix gcmc is being applied to the default group all");
 
   // construct group bitmask for all new atoms
   // aggregated over all group keywords
@@ -566,8 +563,7 @@ void FixGCMCVP::pre_exchange()
   if (full_flag) {
     energy_stored = energy_full();
     if (overlap_flag && energy_stored > MAXENERGYTEST)
-        error->warning(FLERR,"Energy of old configuration in "
-                       "fix gcmc is > MAXENERGYTEST.");
+        error->warning(FLERR,"Energy of old configuration in fix gcmc is > MAXENERGYTEST.");
 
     for (int i = 0; i < ncycles; i++) {
       int ixm = static_cast<int>(random_equal->uniform()*ncycles) + 1;
@@ -576,9 +572,9 @@ void FixGCMCVP::pre_exchange()
         if (xmcmove < patomtrans) 
           attempt_atomic_translation_full();
         else if (xmcmove < patomtrans+pmoltrans)  
-          error->all(FLERR, "Cannot be used for full molecule translation");
+          error->all(FLERR, "Fix gcmc/vp cannot be used for full molecule translation");
         else  
-          error->all(FLERR, "Cannot be used for full molecule rotation");
+          error->all(FLERR, "Fix gcmc/vp cannot be used for full molecule rotation");
       } else {
         double xgcmc = random_equal->uniform();
         if (exchmode == EXCHATOM) {
@@ -588,9 +584,9 @@ void FixGCMCVP::pre_exchange()
             attempt_atomic_insertion_full();
         } else {
           if (xgcmc < 0.5)  
-            error->all(FLERR, "Cannot be used for full molecule deletion"); 
+            error->all(FLERR, "Fix gcmc/vp cannot be used for full molecule deletion"); 
           else  
-            error->all(FLERR, "Cannot be used for full molecule insertion"); 
+            error->all(FLERR, "Fix gcmc/vp cannot be used for full molecule insertion"); 
         }
       }
     }
@@ -1187,7 +1183,7 @@ void FixGCMCVP::update_gas_atoms_list()
 
 void FixGCMCVP::options(int narg, char **arg)
 {
-  if (narg < 0) error->all(FLERR,"Illegal fix gcmc command");
+  if (narg < 0) error->all(FLERR,"Illegal fix gcmc command: Negative number of arguments");
 
   // defaults
 
