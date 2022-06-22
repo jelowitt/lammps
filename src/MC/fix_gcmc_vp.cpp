@@ -1231,44 +1231,43 @@ void FixGCMCVP::options(int narg, char **arg)
   int iarg = 0;
   while (iarg < narg) {
   if (strcmp(arg[iarg],"mol") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       imol = atom->find_molecule(arg[iarg+1]);
       if (imol == -1)
         error->all(FLERR,"Molecule template ID for fix gcmc does not exist");
       if (atom->molecules[imol]->nset > 1 && comm->me == 0)
-        error->warning(FLERR,"Molecule template for "
-                       "fix gcmc has multiple molecules");
+        error->warning(FLERR,"Molecule template for fix gcmc has multiple molecules");
       exchmode = EXCHMOL;
       onemols = atom->molecules;
       nmol = onemols[imol]->nset;
       iarg += 2;
   } else if (strcmp(arg[iarg],"mcmoves") == 0) {
-      if (iarg+4 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+4 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for 'mcmoves'");
       patomtrans = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       pmoltrans = utils::numeric(FLERR,arg[iarg+2],false,lmp);
       pmolrotate = utils::numeric(FLERR,arg[iarg+3],false,lmp);
       if (patomtrans < 0 || pmoltrans < 0 || pmolrotate < 0)
-        error->all(FLERR,"Illegal fix gcmc command");
+        error->all(FLERR,"Illegal fix gcmc command: Negative MC probability");
       pmctot = patomtrans + pmoltrans + pmolrotate;
       if (pmctot <= 0)
-        error->all(FLERR,"Illegal fix gcmc command");
+        error->all(FLERR,"Illegal fix gcmc command: Total MC probability <= 0");
       iarg += 4;
     } else if (strcmp(arg[iarg],"region") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       region = domain->get_region_by_id(arg[iarg+1]);
       if (!region)
         error->all(FLERR,"Region {} for fix gcmc does not exist",arg[iarg+1]);
       idregion = utils::strdup(arg[iarg+1]);
       iarg += 2;
     } else if (strcmp(arg[iarg],"maxangle") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       max_rotation_angle = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       max_rotation_angle *= MY_PI/180;
       iarg += 2;
 
     // VP Specific -- Matias
     } else if (strcmp(arg[iarg], "pair") == 0) {
-      if (iarg + 2 > narg) error->all(FLERR, "Illegal fix GCMC command");
+      if (iarg + 2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       if (strcmp(arg[iarg + 1], "lj/cut") == 0)
         bool pairflag = false;
       else if (strcmp(arg[iarg + 1], "Stw") == 0)
@@ -1279,28 +1278,28 @@ void FixGCMCVP::options(int narg, char **arg)
     }    
     
     else if (strcmp(arg[iarg],"pressure") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       pressure = utils::numeric(FLERR,arg[iarg+1],false,lmp);
-      pressure = pressure * 100.0;    // VP Specifc added by Jibao, according to Matias' code
+      pressure = pressure * 100.0;    // VP Specifc -- added by Jibao, according to Matias' code
       pressure_flag = true;
       iarg += 2;
     } else if (strcmp(arg[iarg],"fugacity_coeff") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       fugacity_coeff = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg],"charge") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       charge = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       charge_flag = true;
       iarg += 2;
     } else if (strcmp(arg[iarg],"rigid") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       delete [] idrigid;
       idrigid = utils::strdup(arg[iarg+1]);
       rigidflag = 1;
       iarg += 2;
     } else if (strcmp(arg[iarg],"shake") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       delete [] idshake;
       idshake = utils::strdup(arg[iarg+1]);
       shakeflag = 1;
@@ -1309,7 +1308,7 @@ void FixGCMCVP::options(int narg, char **arg)
       full_flag = true;
       iarg += 1;
     } else if (strcmp(arg[iarg],"group") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       if (ngroups >= ngroupsmax) {
         ngroupsmax = ngroups+1;
         groupstrings = (char **)
@@ -1321,42 +1320,38 @@ void FixGCMCVP::options(int narg, char **arg)
       ngroups++;
       iarg += 2;
     } else if (strcmp(arg[iarg],"grouptype") == 0) {
-      if (iarg+3 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+3 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       if (ngrouptypes >= ngrouptypesmax) {
         ngrouptypesmax = ngrouptypes+1;
-        grouptypes = (int*) memory->srealloc(grouptypes,ngrouptypesmax*sizeof(int),
-                         "fix_gcmc:grouptypes");
-        grouptypestrings = (char**)
-          memory->srealloc(grouptypestrings,
-                           ngrouptypesmax*sizeof(char *),
-                           "fix_gcmc:grouptypestrings");
+        grouptypes = (int*) memory->srealloc(grouptypes,ngrouptypesmax*sizeof(int), "fix_gcmc:grouptypes");
+        grouptypestrings = (char**)memory->srealloc(grouptypestrings,ngrouptypesmax*sizeof(char *), "fix_gcmc:grouptypestrings");
       }
       grouptypes[ngrouptypes] = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
       grouptypestrings[ngrouptypes] = utils::strdup(arg[iarg+2]);
       ngrouptypes++;
       iarg += 3;
     } else if (strcmp(arg[iarg],"intra_energy") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       energy_intra = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg],"tfac_insert") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       tfac_insert = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg],"overlap_cutoff") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       double rtmp = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       overlap_cutoffsq = rtmp*rtmp;
       overlap_flag = 1;
       iarg += 2;
     } else if (strcmp(arg[iarg],"min") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       min_ngas = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg],"max") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command: Not enough args for '{}'", arg[iarg]);
       max_ngas = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
-    } else error->all(FLERR,"Illegal fix gcmc command");
+    } else error->all(FLERR,"Illegal fix gcmc command: Unknown command name '{}'", arg[iarg]);
   }
 }
