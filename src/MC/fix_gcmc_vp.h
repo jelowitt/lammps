@@ -49,7 +49,7 @@ class FixGCMCVP : public FixGCMC {
 
   double compute_vector(int) override;
 
- private:
+ protected:
 
   // VP requirements
   class Pair *pairsw;    // Pair class for Stw_GCMC
@@ -136,7 +136,6 @@ class FixGCMCVP : public FixGCMC {
   int triclinic;    // 0 = orthog box, 1 = triclinic
 
   class Compute *c_pe;
-  void options(int, char **);
 };
 
 }    // namespace LAMMPS_NS
