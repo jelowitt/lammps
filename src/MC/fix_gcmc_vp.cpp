@@ -1632,57 +1632,6 @@ void FixGCMCVP::attempt_atomic_translation_full()
 /* ----------------------------------------------------------------------
 ------------------------------------------------------------------------- */
 
-void FixGCMCVP::attempt_atomic_deletion_full()
-{
-  double q_tmp;
-  const int q_flag = atom->q_flag;
-
-  ndeletion_attempts += 1.0;
-
-  if (ngas == 0 || ngas <= min_ngas) return;
-
-  double energy_before = energy_stored;
-
-  const int i = pick_random_gas_atom();
-
-  int tmpmask;
-  if (i >= 0) {
-    tmpmask = atom->mask[i];
-    atom->mask[i] = exclusion_group_bit;
-    if (q_flag) {
-      q_tmp = atom->q[i];
-      atom->q[i] = 0.0;
-    }
-  }
-  if (force->kspace) force->kspace->qsum_qsq();
-  if (force->pair->tail_flag) force->pair->reinit();
-  double energy_after = energy_full();
-
-  if (random_equal->uniform() <
-      ngas*exp(beta*(energy_before - energy_after))/(zz*volume)) {
-    if (i >= 0) {
-      atom->avec->copy(atom->nlocal-1,i,1);
-      atom->nlocal--;
-    }
-    atom->natoms--;
-    if (atom->map_style != Atom::MAP_NONE) atom->map_init();
-    ndeletion_successes += 1.0;
-    energy_stored = energy_after;
-  } else {
-    if (i >= 0) {
-      atom->mask[i] = tmpmask;
-      if (q_flag) atom->q[i] = q_tmp;
-    }
-    if (force->kspace) force->kspace->qsum_qsq();
-    if (force->pair->tail_flag) force->pair->reinit();
-    energy_stored = energy_before;
-  }
-  update_gas_atoms_list();
-}
-
-/* ----------------------------------------------------------------------
-------------------------------------------------------------------------- */
-
 void FixGCMCVP::attempt_atomic_insertion_full()
 {
   double lamda[3];
