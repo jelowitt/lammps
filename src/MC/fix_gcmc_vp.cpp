@@ -70,7 +70,7 @@ enum{NONE,MOVEATOM,MOVEMOL}; // movemode
 
 /* ---------------------------------------------------------------------- */
 
-FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) :
+FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 {
   if (narg < 11) error->all(FLERR,"Illegal fix gcmc command: Too few args ({})", narg);
 
@@ -241,7 +241,8 @@ FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) :
     pairsw->coeff(6,a);
     //printf("Este es el cut max %f/n",PairSW->cutmax);
     } // Matias
-  
+}
+
 void FixGCMCVP::options(int narg, char **arg)
 {
   if (narg < 0) error->all(FLERR,"Illegal fix gcmc command: Negative number of arguments");
