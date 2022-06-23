@@ -20,42 +20,50 @@ FixStyle(gcmc/vp,FixGCMCVP);
 #ifndef LMP_FIX_GCMC_VP_H
 #define LMP_FIX_GCMC_VP_H
 
-#include "fix_gcmc.h"
+#include "fix.h"
 
 namespace LAMMPS_NS {
 
-class FixGCMCVP : public FixGCMC {
+class FixGCMCVP : public Fix {
  public:
   FixGCMCVP(class LAMMPS *, int, char **);
-
+  ~FixGCMCVP() override;
+  int setmask() override;
   void init() override;
-  void pre_exchange();
-  void update_gas_atoms_list();
-
-  // Atomic
+  void pre_exchange() override;
+  void attempt_atomic_translation();
   void attempt_atomic_deletion();
   void attempt_atomic_insertion();
-
-  // Atomic Full
+  void attempt_molecule_translation();
+  void attempt_molecule_rotation();
+  void attempt_molecule_deletion();
+  void attempt_molecule_insertion();
+  void attempt_atomic_translation_full();
   void attempt_atomic_deletion_full();
   void attempt_atomic_insertion_full();
-
-  // Forbidden Moves
-  void attempt_atomic_translation_full() {}
-  void attempt_molecule_translation_full() {}
-  void attempt_molecule_rotation_full() {}
-  void attempt_molecule_deletion_full() {}
-  void attempt_molecule_insertion_full() {}
-
+  void attempt_molecule_translation_full();
+  void attempt_molecule_rotation_full();
+  void attempt_molecule_deletion_full();
+  void attempt_molecule_insertion_full();
+  double energy(int, int, tagint, double *);
+  double molecule_energy(tagint);
+  double energy_full();
+  int pick_random_gas_atom();
+  tagint pick_random_gas_molecule();
+  void toggle_intramolecular(int);
+  void update_gas_atoms_list();
   double compute_vector(int) override;
+  double memory_usage() override;
+  void write_restart(FILE *) override;
+  void restart(char *) override;
+  void grow_molecule_arrays(int);
 
- protected:
-
+ private:
   // VP requirements
-  class Pair *pairsw;    // Pair class for Stw_GCMC
-  double energyout;      // Total energy change for compute vector
-  bool pairflag = false;         // Pair style flag, false=lj/cut, true=SW
-  bool regionflag= false;       // False = anywhere in box, True = specific region
+  class Pair *pairsw;         // Pair class for Stw_GCMC
+  double energyout;           // Total energy change for compute vector
+  bool pairflag = false;      // Pair style flag, false=lj/cut, true=SW
+  bool regionflag = false;    // False = anywhere in box, True = specific region
 
   int molecule_group, molecule_group_bit;
   int molecule_group_inversebit;
@@ -136,7 +144,8 @@ class FixGCMCVP : public FixGCMC {
   int triclinic;    // 0 = orthog box, 1 = triclinic
 
   class Compute *c_pe;
-  virtual void options(int, char **) override;
+
+  virtual void options(int, char **);
 };
 
 }    // namespace LAMMPS_NS
