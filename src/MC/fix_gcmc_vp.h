@@ -72,8 +72,8 @@ class FixGCMCVP : public Fix {
   int ngas_before;         // # of gas atoms on procs < this proc
   int exchmode;            // exchange ATOM or MOLECULE
   int movemode;            // move ATOM or MOLECULE
-  class Region *region;    // gcmc region
-  char *idregion;          // gcmc region id
+  class Region *region;    // gcmc/vp region
+  char *idregion;          // gcmc/vp region id
   bool pressure_flag;      // true if user specified reservoir pressure
   bool charge_flag;        // true if user specified atomic charge
   bool full_flag;          // true if doing full system energy calculations
