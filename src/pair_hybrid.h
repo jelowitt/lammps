@@ -67,6 +67,12 @@ class PairHybrid : public Pair {
   double atom2cut(int) override;
   double radii2cut(double, double) override;
 
+  // VP specific
+  void *returnmap_substyle() override;    // added by Jibao; note that ***map is a protected pointer
+  void *returnstyles() override;      // added by Jibao; note that **styles is a protected pointer
+  void *returnkeywords() override;    // added by Jibao; note that ***map is a protected pointer
+  void *returnnmap() override;        // added by Jibao; nmap: # of sub-styles itype,jtype points to
+
  protected:
   int nstyles;        // # of sub-styles
   Pair **styles;      // list of Pair style classes
