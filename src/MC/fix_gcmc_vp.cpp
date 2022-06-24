@@ -228,19 +228,6 @@ FixGCMCVP::FixGCMCVP(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   gcmc_nmax = 0;
   local_gas_list = nullptr;
   
-  // VP Specific -- TODO I don't know why these values for the coeffs are chosen
-  if (pairflag) {  //pairflag stw definido en el lammps
-    pairsw = new PairSW(lmp);
-    char *a[6];
-    a[0] = "*";
-    a[1] = "*";
-    a[2] = "NaCl.sw";
-    a[3] = "mW";
-    a[4] = "Na";
-    a[5] = "Cl";
-    pairsw->coeff(6,a);
-    //printf("Este es el cut max %f/n",PairSW->cutmax);
-    } // Matias
 }
 
 void FixGCMCVP::options(int narg, char **arg)
