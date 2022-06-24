@@ -327,10 +327,10 @@ void FixGCMCVP::options(int narg, char **arg)
     } else if (strcmp(arg[iarg], "pair") == 0) {
       if (iarg + 2 > narg) error->all(FLERR,"Illegal fix gcmc/vp command: Not enough args for '{}'", arg[iarg]);
       if (strcmp(arg[iarg + 1], "lj/cut") == 0) {
-        bool pairflag = false;
+        pairflag = false;
         error->warning(FLERR,"Fix gcmc/vp using pair lj/cut option");
       } else if (strcmp(arg[iarg + 1], "Stw") == 0) {
-        bool pairflag = true;
+        pairflag = true;
         error->warning(FLERR,"Fix gcmc/vp using pair Stw option");
       } else error->all(FLERR, "Illegal fix evaporate command");
       iarg += 2;
