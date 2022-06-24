@@ -1172,3 +1172,36 @@ double PairHybrid::memory_usage()
   for (int m = 0; m < nstyles; m++) bytes += styles[m]->memory_usage();
   return bytes;
 }
+
+/* ----------------------------------------------------------------------
+ added by Jibao
+ ---------------------------------------------------------------------- */
+
+void *PairHybrid::returnmap_substyle()
+{
+    return (void *) map;
+}
+
+void *PairHybrid::returnnmap()
+{
+    return (void *) nmap;
+}
+
+
+/* ----------------------------------------------------------------------
+ added by Jibao
+ ---------------------------------------------------------------------- */
+
+void *PairHybrid::returnkeywords()
+{
+    return (void *) keywords;
+}
+
+/* ----------------------------------------------------------------------
+ added by Jibao
+ ---------------------------------------------------------------------- */
+
+void *PairHybrid::returnstyles()
+{
+    return (void *) styles;
+}
