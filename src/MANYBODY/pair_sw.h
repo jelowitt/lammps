@@ -34,10 +34,10 @@ class PairSW : public Pair {
   void init_style() override;
 
   // VP specific -- Added by Jibao
-  double Stw_GCMC(int, int, int, double *);
-  void *returnmap();
-  void *returnelem2param();
-  void *returnparams();
+  double Stw_GCMC(int, int, int, double *) override;
+  void *returnmap() override;
+  void *returnelem2param() override;
+  void *returnparams() override;
 
   static constexpr int NPARAMS_PER_LINE = 14;
 
