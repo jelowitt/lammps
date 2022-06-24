@@ -161,11 +161,61 @@ class Pair : protected Pointers {
   }
 
   // VP specific
-  // from Matias; added by Jibao
-  virtual double Stw_GCMC(int,int,int, double *) 
+  virtual double Stw_GCMC(int, int, int, double *) { return 0.0; }    // from Matias; added by Jibao
+  virtual void *returnmap()
   {
-    return 0.0;
-  } 
+    return NULL;
+  }    // added by Jibao. For sw or sw0 or swl only; for energy() in fix_gcmc_vp.cpp, or for relative entropy minimization
+
+  virtual void *returnmap_substyle()
+  {
+    return NULL;
+  }    // added by Jibao. For sw or sw0 only; for energy() in fix_gcmc_vp.cpp
+
+  virtual void *returnstyles()
+  {
+    return NULL;
+  }    // added by Jibao. For sw or sw0 only; for energy() in fix_gcmc_vp.cpp
+
+  virtual void *returnkeywords()
+  {
+    return NULL;
+  }    // added by Jibao. For sw or sw0 only; for energy() in fix_gcmc_vp.cpp
+
+  virtual void *returnelem2param()
+  {
+    return NULL;
+  }    // added by Jibao. For sw or sw0 or swl only; for energy() in fix_gcmc_vp.cpp, or for relative entropy minimization
+
+  virtual void *returnparams()
+  {
+    return NULL;
+  }    // added by Jibao. For sw or sw0 only; for energy() in fix_gcmc_vp.cpp
+
+  virtual void *returnnmap()
+  {
+    return NULL;
+  }    // added by Jibao; nmap: # of sub-styles itype,jtype points to
+
+  struct Param {
+    double epsilon, sigma;
+    double littlea, lambda, gamma, costheta;
+    double biga, bigb;
+    double powerp, powerq;
+    double tol;
+    double cut, cutsq;
+    double sigma_gamma, lambda_epsilon, lambda_epsilon2;
+    double c1, c2, c3, c4, c5, c6;
+    int ielement, jelement, kelement;
+  };    // added by Jibao; for virtual twobody() and threebody()
+
+  virtual void twobody(Param *, double, double &, int, double &) {
+  }    // added by Jibao. For sw or sw0 only; for energy() in fix_gcmc_vp.cpp
+  virtual void threebody(Param *, Param *, Param *, double, double, double *, double *, double *,
+                         double *, int, double &)
+  {
+  }    // added by Jibao. For sw or sw0 only; for energy() in fix_gcmc_vp.cpp
+  // End VP Specific
 
   void hessian_twobody(double fforce, double dfac, double delr[3], double phiTensor[6]);
 

@@ -1887,33 +1887,342 @@ double FixGCMCVP::energy(int i, int itype, tagint imolecule, double *coord)
   pair = force->pair;
   cutsq = force->pair->cutsq;
 
+  double rsq1, rsq2;                                      // added by Jibao; for Stw_GCMC
+  int ietype, jetype, ketype, ijparam, ikparam, ijkparam; // added by Jibao; ietype: element type of itype
+  int jtype, ktype;                                       // added by Jibao; for Stw_GCMC
+  double delr1[3], delr2[3], fj[3], fk[3];                // added by Jibao; for Stw_GCMC
+  int jj, kk;                                             // added by Jibao; for Stw_GCMC
+
   double fpair = 0.0;
   double factor_coul = 1.0;
   double factor_lj = 1.0;
 
+  double twobodyeng = 0.0;   // added by Jibao; for Stw_GCMC
+  double tmp2body = 0.0;     // added by Jibao; for Stw_GCMC
+  double threebodyeng = 0.0; // added by Jibao; for Stw_GCMC
+  double tmp3body = 0.0;     // added by Jibao; for Stw_GCMC
+
+  char *pair_style;               // added by Jibao
+  pair_style = force->pair_style; // added by Jibao
+  int eflag = 1;                  // added by Jibao; for twobody() and threebody()
+
   double total_energy = 0.0;
+  if (!strcmp(pair_style, "hybrid"))
+  {
+    int ***map_substyle = (int ***)pair->returnmap_substyle(); // added by Jibao; return list of sub-styles itype,jtype points to
+    Pair **styles = (Pair **)pair->returnstyles();             // added by Jibao; return list of Pair style classes
+    char **keywords = (char **)pair->returnkeywords();         // added by Jibao; return style name of each Pair style
 
-  for (int j = 0; j < nall; j++) {
+    for (int j = 0; j < nall; j++)
+    {
+      if (i == j)
+        continue;
+      if (exchmode == EXCHMOL || movemode == MOVEMOL)
+        if (imolecule == molecule[j])
+          continue;
+      delx = coord[0] - x[j][0];
+      dely = coord[1] - x[j][1];
+      delz = coord[2] - x[j][2];
+      rsq = delx * delx + dely * dely + delz * delz;
+      jtype = type[j];
+      int **nmap = (int **)pair->returnnmap();
+      if (nmap[itype][jtype] > 0)
+      {
+        int substyle = map_substyle[itype][jtype][0];
+        if (strstr(keywords[substyle], "sw"))
+        {
+          int *map = (int *)styles[substyle]->returnmap();
+          ietype = map[itype];
+          LAMMPS_NS::Pair::Param *params = (LAMMPS_NS::Pair::Param *)styles[substyle]->returnparams(); // parameter set for an I-J-K interaction
+          int ***elem2param = (int ***)styles[substyle]->returnelem2param();
+          jetype = map[jtype];
 
-    if (i == j) continue;
-    if (exchmode == EXCHMOL || movemode == MOVEMOL)
-      if (imolecule == molecule[j]) continue;
+          ijparam = elem2param[ietype][jetype][jetype];
+          if (rsq < params[ijparam].cutsq)
+          {
+            styles[substyle]->twobody(&params[ijparam], rsq, fpair, eflag, tmp2body);
+            total_energy += tmp2body;
+          }
+        }
+        else
+        {
+          if (rsq < cutsq[itype][jtype])
+            total_energy +=
+                styles[substyle]->single(i, j, itype, jtype, rsq, factor_coul, factor_lj, fpair);
+        }
+      }
+    }
+    // only for sw, sw0 potential
+    // first possibility ii!=i j==i k!=i or ii!=i; j!=i ; k==i
+    for (int ii = 0; ii < nall; ii++)
+    {
+      if (ii == i)
+        continue;
+      if (exchmode == EXCHMOL || movemode == MOVEMOL)
+        if (imolecule == molecule[ii])
+          continue;
 
-    delx = coord[0] - x[j][0];
-    dely = coord[1] - x[j][1];
-    delz = coord[2] - x[j][2];
-    rsq = delx*delx + dely*dely + delz*delz;
-    int jtype = type[j];
+      int **nmap = (int **)pair->returnnmap();
+      // printf("first possibility: nmap[%d][%d]= %d in for(int ii = 0;ii < nall;ii++){}\n",jtype,itype,nmap[jtype][itype]);
+      jtype = type[ii];
 
-    // if overlap check requested, if overlap,
-    // return signal value for energy
+      if (nmap[jtype][itype] > 0)
+      {
 
-    if (overlap_flag && rsq < overlap_cutoffsq)
-      return MAXENERGYSIGNAL;
+        int substyle_ji = map_substyle[jtype][itype][0];
 
-    if (rsq < cutsq[itype][jtype])
-      total_energy +=
-        pair->single(i,j,itype,jtype,rsq,factor_coul,factor_lj,fpair);
+        if (!strcmp(keywords[substyle_ji], "sw"))
+        {
+          int *map = (int *)styles[substyle_ji]->returnmap();
+          ietype = map[type[ii]];
+
+          LAMMPS_NS::Pair::Param *params = (LAMMPS_NS::Pair::Param *)styles[substyle_ji]->returnparams(); // parameter set for an I-J-K interaction
+          int ***elem2param = (int ***)styles[substyle_ji]->returnelem2param();
+
+          jetype = map[itype];
+
+          ijparam = elem2param[ietype][jetype][jetype];
+          delr1[0] = coord[0] - x[ii][0];
+          delr1[1] = coord[1] - x[ii][1];
+          delr1[2] = coord[2] - x[ii][2];
+          rsq1 = delr1[0] * delr1[0] + delr1[1] * delr1[1] + delr1[2] * delr1[2];
+          if (rsq1 > params[ijparam].cutsq)
+            continue;
+
+          for (int k = 0; k < nall; k++)
+          {
+            if (ii == k || k == i)
+              continue;
+            if (exchmode == EXCHMOL || movemode == MOVEMOL)
+              if (imolecule == molecule[ii])
+                continue;
+
+            // printf("first possibility: nmap[%d][%d]= %d in for(int k = 0; k < nall; k++){}\n",jtype,ktype,nmap[jtype][ktype]);
+            ktype = type[k];
+            if (nmap[jtype][ktype] > 0)
+            {
+
+              int substyle_jk = map_substyle[jtype][ktype][0];
+
+              if (!strcmp(keywords[substyle_jk], "sw"))
+              { // if yes, substyle_jk == sybstyle_ji
+                ketype = map[type[k]];
+
+                delr2[0] = x[k][0] - x[ii][0];
+                delr2[1] = x[k][1] - x[ii][1];
+                delr2[2] = x[k][2] - x[ii][2];
+
+                ikparam = elem2param[ietype][ketype][ketype];
+                ijkparam = elem2param[ietype][jetype][ketype];
+
+                rsq2 = delr2[0] * delr2[0] + delr2[1] * delr2[1] + delr2[2] * delr2[2];
+                if (rsq2 > params[ikparam].cutsq)
+                  continue;
+                styles[substyle_ji]->threebody(&params[ijparam], &params[ikparam], &params[ijkparam], rsq1, rsq2, delr1, delr2, fj, fk, eflag, tmp3body);
+
+                total_energy += tmp3body;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // second possibility ii==i j!=i k!=i
+    for (int j = 0; j < nall; j++)
+    {
+      if (i == j)
+        continue;
+      if (exchmode == EXCHMOL || movemode == MOVEMOL)
+        if (imolecule == molecule[j])
+          continue;
+
+      int **nmap = (int **)pair->returnnmap();
+
+      // printf("second possibility: nmap[%d][%d]= %d in for(int k = 0; k < nall; k++){}\n",itype,jtype,nmap[itype][jtype]);
+      jtype = type[j];
+      if (nmap[itype][jtype] > 0)
+      {
+
+        int substyle_ij = map_substyle[itype][jtype][0];
+
+        if (!strcmp(keywords[substyle_ij], "sw"))
+        {
+          int *map = (int *)styles[substyle_ij]->returnmap();
+          jetype = map[type[j]];
+          ietype = map[itype];
+
+          LAMMPS_NS::Pair::Param *params = (LAMMPS_NS::Pair::Param *)styles[substyle_ij]->returnparams(); // parameter set for an I-J-K interaction
+          int ***elem2param = (int ***)styles[substyle_ij]->returnelem2param();
+
+          ijparam = elem2param[ietype][jetype][jetype];
+          delr1[0] = x[j][0] - coord[0];
+          delr1[1] = x[j][1] - coord[1];
+          delr1[2] = x[j][2] - coord[2];
+          rsq1 = delr1[0] * delr1[0] + delr1[1] * delr1[1] + delr1[2] * delr1[2];
+
+          if (rsq1 > params[ijparam].cutsq)
+            continue;
+          for (int k = j; k < nall; k++)
+          {
+            if (i == k || k == j)
+              continue;
+
+            ktype = type[k];
+
+            if (nmap[itype][ktype] > 0)
+            {
+
+              int substyle_ik = map_substyle[itype][ktype][0];
+
+              if (!strcmp(keywords[substyle_ik], "sw"))
+              {
+                ketype = map[type[k]];
+
+                ikparam = elem2param[ietype][ketype][ketype];
+                ijkparam = elem2param[ietype][jetype][ketype];
+                delr2[0] = x[k][0] - coord[0];
+                delr2[1] = x[k][1] - coord[1];
+                delr2[2] = x[k][2] - coord[2];
+                rsq2 = delr2[0] * delr2[0] + delr2[1] * delr2[1] + delr2[2] * delr2[2];
+                if (rsq2 > params[ikparam].cutsq)
+                  continue;
+                styles[substyle_ij]->threebody(&params[ijparam], &params[ikparam], &params[ijkparam], rsq1, rsq2, delr1, delr2, fj, fk, eflag, tmp3body);
+                total_energy += tmp3body;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  else if (strstr(pair_style, "sw"))
+  {
+    // if (comm->me == 0) printf("energy() for Stw_GCMC part\n");
+    int *map = (int *)pair->returnmap();
+    ietype = map[itype];
+
+    LAMMPS_NS::Pair::Param *params = (LAMMPS_NS::Pair::Param *)pair->returnparams(); // parameter set for an I-J-K interaction
+    int ***elem2param = (int ***)pair->returnelem2param();
+
+    for (int j = 0; j < nall; j++)
+    {
+      if (i == j)
+        continue;
+      if (exchmode == EXCHMOL || movemode == MOVEMOL)
+        if (imolecule == molecule[j])
+          continue;
+      delx = coord[0] - x[j][0];
+      dely = coord[1] - x[j][1];
+      delz = coord[2] - x[j][2];
+      rsq = delx * delx + dely * dely + delz * delz;
+      jetype = map[type[j]];
+      ijparam = elem2param[ietype][jetype][jetype];
+
+      if (rsq < params[ijparam].cutsq)
+      {
+        pair->twobody(&params[ijparam], rsq, fpair, eflag, tmp2body);
+        twobodyeng += tmp2body;
+      }
+    }
+    // first possibility ii!=i j==i k!=i or ii!=i; j!=i ; k==i
+    jetype = map[itype];
+    for (int ii = 0; ii < nall; ii++)
+    {
+      if (ii == i)
+        continue;
+      if (exchmode == EXCHMOL || movemode == MOVEMOL)
+        if (imolecule == molecule[ii])
+          continue;
+      ietype = map[type[ii]];
+      ijparam = elem2param[ietype][jetype][jetype];
+      delr1[0] = coord[0] - x[ii][0];
+      delr1[1] = coord[1] - x[ii][1];
+      delr1[2] = coord[2] - x[ii][2];
+      rsq1 = delr1[0] * delr1[0] + delr1[1] * delr1[1] + delr1[2] * delr1[2];
+      if (rsq1 > params[ijparam].cutsq)
+        continue;
+      for (int k = 0; k < nall; k++)
+      {
+        if (ii == k || k == i)
+          continue;
+        ketype = map[type[k]];
+        delr2[0] = x[k][0] - x[ii][0];
+        delr2[1] = x[k][1] - x[ii][1];
+        delr2[2] = x[k][2] - x[ii][2];
+        ikparam = elem2param[ietype][ketype][ketype];
+        ijkparam = elem2param[ietype][jetype][ketype];
+        rsq2 = delr2[0] * delr2[0] + delr2[1] * delr2[1] + delr2[2] * delr2[2];
+        if (rsq2 > params[ikparam].cutsq)
+          continue;
+        pair->threebody(&params[ijparam], &params[ikparam], &params[ijkparam], rsq1, rsq2, delr1, delr2, fj, fk, eflag, tmp3body);
+        threebodyeng += tmp3body;
+      }
+    }
+    // second possibility ii==i j!=i k!=i
+    ietype = map[itype];
+    for (int j = 0; j < nall; j++)
+    {
+      if (i == j)
+        continue;
+      if (exchmode == EXCHMOL || movemode == MOVEMOL)
+        if (imolecule == molecule[j])
+          continue;
+      jetype = map[type[j]];
+      ijparam = elem2param[ietype][jetype][jetype];
+      delr1[0] = x[j][0] - coord[0];
+      delr1[1] = x[j][1] - coord[1];
+      delr1[2] = x[j][2] - coord[2];
+      rsq1 = delr1[0] * delr1[0] + delr1[1] * delr1[1] + delr1[2] * delr1[2];
+      if (rsq1 > params[ijparam].cutsq)
+        continue;
+      for (int k = j; k < nall; k++)
+      {
+        if (i == k || k == j)
+          continue;
+        ketype = map[type[k]];
+        ikparam = elem2param[ietype][ketype][ketype];
+        ijkparam = elem2param[ietype][jetype][ketype];
+        delr2[0] = x[k][0] - coord[0];
+        delr2[1] = x[k][1] - coord[1];
+        delr2[2] = x[k][2] - coord[2];
+        rsq2 = delr2[0] * delr2[0] + delr2[1] * delr2[1] + delr2[2] * delr2[2];
+        if (rsq2 > params[ikparam].cutsq)
+          continue;
+        pair->threebody(&params[ijparam], &params[ikparam], &params[ijkparam], rsq1, rsq2, delr1, delr2, fj, fk, eflag, tmp3body);
+        threebodyeng += tmp3body;
+      }
+    }
+    // TOTAL ENERGY
+    total_energy = threebodyeng + twobodyeng;
+
+  }
+  else if (strcmp(pair_style, "hybrid/overlay") != 0)
+  {
+    for (int j = 0; j < nall; j++) {
+
+      if (i == j) continue;
+      if (exchmode == EXCHMOL || movemode == MOVEMOL)
+        if (imolecule == molecule[j]) continue;
+
+      delx = coord[0] - x[j][0];
+      dely = coord[1] - x[j][1];
+      delz = coord[2] - x[j][2];
+      rsq = delx*delx + dely*dely + delz*delz;
+      int jtype = type[j];
+
+      // if overlap check requested, if overlap,
+      // return signal value for energy
+
+      if (overlap_flag && rsq < overlap_cutoffsq)
+        return MAXENERGYSIGNAL;
+
+      if (rsq < cutsq[itype][jtype])
+        total_energy +=
+          pair->single(i,j,itype,jtype,rsq,factor_coul,factor_lj,fpair);
+    } 
+  } else {
+    error->all(FLERR, "fix gcmc/vp does not currently support hybrid/overlay pair style");
   }
 
   return total_energy;

@@ -33,12 +33,15 @@ class PairSW : public Pair {
   double init_one(int, int) override;
   void init_style() override;
 
-  // VP Specific -- added by Jibao
-  double Stw_GCMC(int,int,int, double *);
+  // VP specific -- Added by Jibao
+  double Stw_GCMC(int, int, int, double *);
+  void *returnmap();
+  void *returnelem2param();
+  void *returnparams();
 
   static constexpr int NPARAMS_PER_LINE = 14;
 
-  struct Param {
+  /*struct Param {
     double epsilon, sigma;
     double littlea, lambda, gamma, costheta;
     double biga, bigb;
@@ -48,7 +51,7 @@ class PairSW : public Pair {
     double sigma_gamma, lambda_epsilon, lambda_epsilon2;
     double c1, c2, c3, c4, c5, c6;
     int ielement, jelement, kelement;
-  };
+  };*/
 
  protected:
   double cutmax;      // max cutoff for all elements

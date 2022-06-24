@@ -532,133 +532,153 @@ void PairSW::threebody(Param *paramij, Param *paramik, Param *paramijk,
 /*--------------------------------------------------------------------
  GCMC ROUTINE FOR STW POTENTIAL
  ----------------------------------------------------------------------*/
-
-double PairSW::Stw_GCMC(int i,int ntype,int eflag, double *coord)
+double PairSW::Stw_GCMC(int i, int ntype, int eflag, double *coord)
 {
-  //printf( "%s\n","porentrarGC");
-  
-  //i = 7;  // debug; added by Jibao
-  //if (comm->me == 0) printf("beginning of Stw_GCMC(); i = %d\n",i);    // added by Jibao
-  int inum;
-  int itype,jtype,ktype,ijparam,ikparam,ijkparam;
-  double delx,dely,delz,evdwl,fpair;
-  double rsq,rsq1,rsq2;
-  double delr1[3],delr2[3],fj[3],fk[3];
-  int *ilist,*jlist,*numneigh,**firstneigh;
-  
+  if (comm->me == 0)
+    printf("PairSW::Stw_GCMC\n");
+
+  double delx, dely, delz;
+  double rsq, rsq1, rsq2, rsq3;
+  double fpair;
+  int itype, jtype, ktype, ijparam, ikparam, ijkparam;
+  double delr1[3], delr2[3], fj[3], fk[3];
+
   double **x = atom->x;
   int *type = atom->type;
   int nall = atom->nlocal + atom->nghost;
   int newton_pair = force->newton_pair;
-  
+  int jj, kk;
+
+  int *ilist, *jlist, *numneigh, **firstneigh, inum;
+
   inum = list->inum;
   ilist = list->ilist;
   numneigh = list->numneigh;
   firstneigh = list->firstneigh;
-  //	printf( "%s\n","entreGC");
-  //important
-  
-  //----------
-  // printf("nall %d\n",nall);
-  double total_energy =0.0;
-  double twobodyeng=0.0;
-  double tmp2body=0.0;
-  double threebodyeng=0.0;
-  double tmp3body=0.0;
-  
-  itype=map[ntype];
-  
-  //if (comm->me == 0) printf("before two-body part in Stw_GCMC()\n");    // added by Jibao
+
+  double total_energy = 0.0;
+  double twobodyeng = 0.0;
+  double tmp2body = 0.0;
+  double threebodyeng = 0.0;
+  double tmp3body = 0.0;
+
+  itype = map[ntype];
+
   // two body part
-  for(int j=0; j < nall; j++){
-      //if (comm->me == 0) printf("j = %d in two-body part in Stw_GCMC()\n",j);    // added by Jibao
-      if (i == j) continue;
-      //if (comm->me == 0) printf("x[%d][0] = %f,coord = %d\n",j,x[j][0],coord);// added by Jibao
-      //if (comm->me == 0) printf("coord[0] = %f\n",coord[0]);// added by Jibao
-      delx = coord[0] - x[j][0];
-      dely = coord[1] - x[j][1];
-      delz = coord[2] - x[j][2];
-      //if (comm->me == 0) printf("j = %d in two-body part in Stw_GCMC()\n",j);    // added by Jibao
-      rsq = delx*delx + dely*dely + delz*delz;
-      jtype=map[type[j]];
-      ijparam = elem3param[itype][jtype][jtype];
-      
-      if (rsq < params[ijparam].cutsq){
-          twobody(&params[ijparam],rsq,fpair,eflag,tmp2body);        
-          twobodyeng+=tmp2body;
-          //printf("# %d %d %d %d %d %f %e\n",ntype,type[j],itype,jtype,ijparam,params[ijparam].epsilon,tmp2body);
-      }
-      
+  for (int j = 0; j < nall; j++)
+  {
+    if (i == j)
+      continue;
+    delx = coord[0] - x[j][0];
+    dely = coord[1] - x[j][1];
+    delz = coord[2] - x[j][2];
+    rsq = delx * delx + dely * dely + delz * delz;
+    jtype = map[type[j]];
+    ijparam = elem3param[itype][jtype][jtype];
+
+    if (rsq < params[ijparam].cutsq)
+    {
+      twobody(&params[ijparam], rsq, fpair, eflag, tmp2body);
+      twobodyeng += tmp2body;
+    }
   }
-  //if (comm->me == 0) printf("after two-body part in Stw_GCMC()\n");    // added by Jibao
-  //first possibility ii!=i j==i k!=i or ii!=i; j!=i ; k==i
-  jtype=map[ntype];
-  for(int ii = 0; ii < nall; ii++){
-      if (ii == i) continue;
-      
-      itype= map[type[ii]];
-      ijparam = elem3param[itype][jtype][jtype];
-      
-      delr1[0] = coord[0] - x[ii][0];
-      delr1[1] = coord[1] - x[ii][1];
-      delr1[2] = coord[2] - x[ii][2];
-      rsq1 = delr1[0]*delr1[0] + delr1[1]*delr1[1] + delr1[2]*delr1[2];
-      
-      if (rsq1 > params[ijparam].cutsq) continue;
-      
-      for (int k = 0; k < nall; k++){
-          if (ii==k || k==i) continue;
-          ktype = map[type[k]];
-          delr2[0] = x[k][0] - x[ii][0];
-          delr2[1] = x[k][1] - x[ii][1];
-          delr2[2] = x[k][2] - x[ii][2];
-          ikparam = elem3param[itype][ktype][ktype];
-          ijkparam = elem3param[itype][jtype][ktype];
-          rsq2 = delr2[0]*delr2[0] + delr2[1]*delr2[1] + delr2[2]*delr2[2];
-          if (rsq2 > params[ikparam].cutsq) continue;
-          threebody(&params[ijparam],&params[ikparam],&params[ijkparam],rsq1,rsq2,delr1,delr2,fj,fk,eflag,tmp3body);
-          threebodyeng+=tmp3body;
-          
-          //printf("## %d %d %d %d %d %d %d %d %d %f %e\n",ntype,type[ii],type[k],jtype,itype,ktype,ijparam,
-          //           ikparam,ijkparam, params[ijkparam].lambda,tmp3body);
-      }
+  // first possibility ii!=i j==i k!=i or ii!=i; j!=i ; k==i
+  jtype = map[ntype];
+  for (int ii = 0; ii < nall; ii++)
+  {
+    if (ii == i)
+      continue;
+    itype = map[type[ii]];
+    ijparam = elem3param[itype][jtype][jtype];
+    delr1[0] = coord[0] - x[ii][0];
+    delr1[1] = coord[1] - x[ii][1];
+    delr1[2] = coord[2] - x[ii][2];
+    rsq1 = delr1[0] * delr1[0] + delr1[1] * delr1[1] + delr1[2] * delr1[2];
+    if (rsq1 > params[ijparam].cutsq)
+      continue;
+    for (int k = 0; k < nall; k++)
+    {
+      if (ii == k || k == i)
+        continue;
+      ktype = map[type[k]];
+      delr2[0] = x[k][0] - x[ii][0];
+      delr2[1] = x[k][1] - x[ii][1];
+      delr2[2] = x[k][2] - x[ii][2];
+
+      ikparam = elem3param[itype][ktype][ktype];
+      ijkparam = elem3param[itype][jtype][ktype];
+      rsq2 = delr2[0] * delr2[0] + delr2[1] * delr2[1] + delr2[2] * delr2[2];
+      if (rsq2 > params[ikparam].cutsq)
+        continue;
+      threebody(&params[ijparam], &params[ikparam], &params[ijkparam], rsq1, rsq2, delr1, delr2, fj, fk, eflag, tmp3body);
+      threebodyeng += tmp3body;
+    }
   }
-  //second possibility ii==i j!=i k!=i
-  itype=map[ntype];
-  for (int j = 0; j < nall; j++){
-      if (i == j) continue;
-      jtype = map[type[j]];
-      ijparam = elem3param[itype][jtype][jtype];
-      
-      delr1[0] = x[j][0] - coord[0];
-      delr1[1] = x[j][1] - coord[1];
-      delr1[2] = x[j][2] - coord[2];
-      rsq1 = delr1[0]*delr1[0] + delr1[1]*delr1[1] + delr1[2]*delr1[2];
-      if (rsq1 > params[ijparam].cutsq) continue;
-      
-      for (int k = j; k < nall; k++) {
-          if (i==k || k == j ) continue;
-          ktype = map[type[k]];
-          ikparam = elem3param[itype][ktype][ktype];
-          ijkparam = elem3param[itype][jtype][ktype];
-          
-          delr2[0] = x[k][0] - coord[0];
-          delr2[1] = x[k][1] - coord[1];
-          delr2[2] = x[k][2] - coord[2];
-          
-          rsq2 = delr2[0]*delr2[0] + delr2[1]*delr2[1] + delr2[2]*delr2[2];
-          
-          if (rsq2 > params[ikparam].cutsq) continue;
-          threebody(&params[ijparam],&params[ikparam],&params[ijkparam],rsq1,rsq2,delr1,delr2,fj,fk,eflag,tmp3body);
-          threebodyeng+=tmp3body;
-          //printf(" ### %d %d %d %d %d %d %d %d %d %f %e\n",ntype,type[j],type[k],jtype,itype,ktype,ijparam,
-          //        ikparam,ijkparam, params[ijkparam].lambda,tmp3body);
-      }
+  // second possibility ii==i j!=i k!=i
+  itype = map[ntype];
+  for (int j = 0; j < nall; j++)
+  {
+    if (i == j)
+      continue;
+    jtype = map[type[j]];
+    ijparam = elem3param[itype][jtype][jtype];
+    delr1[0] = x[j][0] - coord[0];
+    delr1[1] = x[j][1] - coord[1];
+    delr1[2] = x[j][2] - coord[2];
+    rsq1 = delr1[0] * delr1[0] + delr1[1] * delr1[1] + delr1[2] * delr1[2];
+    if (rsq1 > params[ijparam].cutsq)
+      continue;
+    for (int k = j; k < nall; k++)
+    {
+      if (i == k || k == j)
+        continue;
+      ktype = map[type[k]];
+      ikparam = elem3param[itype][ktype][ktype];
+      ijkparam = elem3param[itype][jtype][ktype];
+      delr2[0] = x[k][0] - coord[0];
+      delr2[1] = x[k][1] - coord[1];
+      delr2[2] = x[k][2] - coord[2];
+      rsq2 = delr2[0] * delr2[0] + delr2[1] * delr2[1] + delr2[2] * delr2[2];
+      if (rsq2 > params[ikparam].cutsq)
+        continue;
+      threebody(&params[ijparam], &params[ikparam], &params[ijkparam], rsq1, rsq2, delr1, delr2, fj, fk, eflag, tmp3body);
+      threebodyeng += tmp3body;
+    }
   }
-  ////////// TOTAL ENERGY/////
-  total_energy=threebodyeng+twobodyeng;
-  // printf("###########%e %e %e\n",total_energy,twobodyeng,threebodyeng);
-  //if (comm->me == 0) printf("end of Stw_GCMC()\n");    // added by Jibao
+  // TOTAL ENERGY
+  total_energy = threebodyeng + twobodyeng;
+
+  if (comm->me == 0)
+  {
+    printf("total_energy= %e, twobodyeng= %e, threebodyeng= %e\n", total_energy, twobodyeng, threebodyeng);
+    printf("end of Stw_GCMC()\n"); // added by Jibao
+  }
   return total_energy;
 }
-//-------------------------------------------------------------------------
+
+/*--------------------------------------------------------------------
+ return map; added by Jibao
+ ----------------------------------------------------------------------*/
+
+void *PairSW::returnmap()
+{
+  return (void *)map;
+}
+
+/* ----------------------------------------------------------------------
+ added by Jibao
+ ---------------------------------------------------------------------- */
+
+void *PairSW::returnelem2param()
+{
+  return (void *)elem3param;
+}
+
+/* ----------------------------------------------------------------------
+ added by Jibao
+ ---------------------------------------------------------------------- */
+
+void *PairSW::returnparams()
+{
+  return (void *)params;
+}
