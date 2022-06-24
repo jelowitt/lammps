@@ -934,10 +934,10 @@ void FixGCMCVP::attempt_atomic_deletion()
              i, atom->type[i], ngcmc_type);    // added by Jibao
 
     if (pairflag) {
+      pair = force->pair;  // Matias
+      deletion_energy = pairsw->Stw_GCMC(i, ngcmc_type, 1, atom->x[i]);  // Matias
+    } else {
       deletion_energy = energy(i, ngcmc_type, -1, atom->x[i]);
-    } else if (!pairflag) {
-      pair = force->pair;    //force obtejo que tiene pair           // Matias
-      deletion_energy = pairsw->Stw_GCMC(i, ngcmc_type, 1, atom->x[i]);    // Matias
     }
 
     energy_all = deletion_energy;    // Matias
@@ -1055,7 +1055,7 @@ void FixGCMCVP::attempt_atomic_insertion()
       insertion_energy = energy(ii,ngcmc_type,-1,coord);       // from version 2015; added by Jibao
     } else if (pairflag) {                                     // from Matias; added by Jibao
       pair = force->pair;                                      // from Matias; added by Jibao
-      insertion_energy =pairsw->Stw_GCMC(nall,ngcmc_type,1,coord);  // from Matias; added by Jibao
+      insertion_energy = pairsw->Stw_GCMC(nall,ngcmc_type,1,coord);  // from Matias; added by Jibao
     }
     energy_all = insertion_energy;    // from Matias; added by Jibao
     proc_id = comm->me;               // from Matias; added by Jibao
