@@ -331,7 +331,7 @@ void FixGCMCVP::options(int narg, char **arg)
         error->warning(FLERR,"Fix gcmc/vp using pair lj/cut option");
       } else if (strcmp(arg[iarg + 1], "Stw") == 0) {
         bool pairflag = true;
-        error->warning(FLERR,"Fix gcmc/vp using pair Swt option");
+        error->warning(FLERR,"Fix gcmc/vp using pair Stw option");
       } else error->all(FLERR, "Illegal fix evaporate command");
       iarg += 2;
     }    
@@ -510,15 +510,18 @@ void FixGCMCVP::init()
         (force->pair_match("^eam",0)) ||
         (force->pair->tail_flag)) {
       full_flag = true;  // Calculate the energy of the full system
-      if (comm->me == 0)
+      
+      // VP Specific -- Pair Flag management
+      if (pairflag) {
+        full_flag = false;
+      }
+
+      if (comm->me == 0 && full_flag)
         error->warning(FLERR,"Fix gcmc/vp using full_energy option");
     }
   }
   
-  // VP Specific -- Pair Flag management
-  if (pairflag) {
-    full_flag = false;
-  }
+
 
   // Compute the potential energy
   if (full_flag) c_pe = modify->compute[modify->find_compute("thermo_pe")];
