@@ -41,10 +41,6 @@ class FixGCMCVP : public Fix {
   void attempt_atomic_translation_full();
   void attempt_atomic_deletion_full();
   void attempt_atomic_insertion_full();
-  void attempt_molecule_translation_full();
-  void attempt_molecule_rotation_full();
-  void attempt_molecule_deletion_full();
-  void attempt_molecule_insertion_full();
   double energy(int, int, tagint, double *);
   double molecule_energy(tagint);
   double energy_full();

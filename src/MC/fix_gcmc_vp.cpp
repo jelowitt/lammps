@@ -1125,6 +1125,151 @@ void FixGCMCVP::attempt_atomic_insertion()
 /* ----------------------------------------------------------------------
 ------------------------------------------------------------------------- */
 
+void FixGCMCVP::attempt_molecule_rotation()
+{
+  nrotation_attempts += 1.0;
+
+  if (ngas == 0) return;
+
+  tagint rotation_molecule = pick_random_gas_molecule();
+  if (rotation_molecule == -1) return;
+
+  double energy_before_sum = molecule_energy(rotation_molecule);
+  if (overlap_flag && energy_before_sum > MAXENERGYTEST)
+    error->warning(FLERR,"Energy of old configuration in "
+                   "fix gcmc is > MAXENERGYTEST.");
+
+  int *mask = atom->mask;
+  int nmolcoords = 0;
+  for (int i = 0; i < atom->nlocal; i++) {
+    if (atom->molecule[i] == rotation_molecule) {
+      mask[i] |= molecule_group_bit;
+      nmolcoords++;
+    } else {
+      mask[i] &= molecule_group_inversebit;
+    }
+  }
+
+  if (nmolcoords > nmaxmolatoms)
+    grow_molecule_arrays(nmolcoords);
+
+  double com[3];
+  com[0] = com[1] = com[2] = 0.0;
+  group->xcm(molecule_group,gas_mass,com);
+
+  // generate point in unit cube
+  // then restrict to unit sphere
+
+  double r[3],rotmat[3][3],quat[4];
+  double rsq = 1.1;
+  while (rsq > 1.0) {
+    r[0] = 2.0*random_equal->uniform() - 1.0;
+    r[1] = 2.0*random_equal->uniform() - 1.0;
+    r[2] = 2.0*random_equal->uniform() - 1.0;
+    rsq = MathExtra::dot3(r, r);
+  }
+
+  double theta = random_equal->uniform() * max_rotation_angle;
+  MathExtra::norm3(r);
+  MathExtra::axisangle_to_quat(r,theta,quat);
+  MathExtra::quat_to_mat(quat,rotmat);
+
+  double **x = atom->x;
+  imageint *image = atom->image;
+  double energy_after = 0.0;
+  int n = 0;
+  for (int i = 0; i < atom->nlocal; i++) {
+    if (mask[i] & molecule_group_bit) {
+      double xtmp[3];
+      domain->unmap(x[i],image[i],xtmp);
+      xtmp[0] -= com[0];
+      xtmp[1] -= com[1];
+      xtmp[2] -= com[2];
+      MathExtra::matvec(rotmat,xtmp,molcoords[n]);
+      molcoords[n][0] += com[0];
+      molcoords[n][1] += com[1];
+      molcoords[n][2] += com[2];
+      xtmp[0] = molcoords[n][0];
+      xtmp[1] = molcoords[n][1];
+      xtmp[2] = molcoords[n][2];
+      domain->remap(xtmp);
+      if (!domain->inside(xtmp))
+        error->one(FLERR,"Fix gcmc put atom outside box");
+      energy_after += energy(i,atom->type[i],rotation_molecule,xtmp);
+      n++;
+    }
+  }
+
+  double energy_after_sum = 0.0;
+  MPI_Allreduce(&energy_after,&energy_after_sum,1,MPI_DOUBLE,MPI_SUM,world);
+
+  if (energy_after_sum < MAXENERGYTEST &&
+      random_equal->uniform() <
+      exp(beta*(energy_before_sum - energy_after_sum))) {
+    int n = 0;
+    for (int i = 0; i < atom->nlocal; i++) {
+      if (mask[i] & molecule_group_bit) {
+        image[i] = imagezero;
+        x[i][0] = molcoords[n][0];
+        x[i][1] = molcoords[n][1];
+        x[i][2] = molcoords[n][2];
+        domain->remap(x[i],image[i]);
+        n++;
+      }
+    }
+    if (triclinic) domain->x2lamda(atom->nlocal);
+    domain->pbc();
+    comm->exchange();
+    atom->nghost = 0;
+    comm->borders();
+    if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
+    update_gas_atoms_list();
+    nrotation_successes += 1.0;
+  }
+}
+
+/* ----------------------------------------------------------------------
+------------------------------------------------------------------------- */
+
+void FixGCMCVP::attempt_molecule_deletion()
+{
+  ndeletion_attempts += 1.0;
+
+  if (ngas == 0 || ngas <= min_ngas) return;
+
+  // work-around to avoid n=0 problem with fix rigid/nvt/small
+
+  if (rigidflag && ngas == natoms_per_molecule) return;
+
+  tagint deletion_molecule = pick_random_gas_molecule();
+  if (deletion_molecule == -1) return;
+
+  double deletion_energy_sum = molecule_energy(deletion_molecule);
+
+  if (random_equal->uniform() <
+      ngas*exp(beta*deletion_energy_sum)/(zz*volume*natoms_per_molecule)) {
+    int i = 0;
+    while (i < atom->nlocal) {
+      if (atom->molecule[i] == deletion_molecule) {
+        atom->avec->copy(atom->nlocal-1,i,1);
+        atom->nlocal--;
+      } else i++;
+    }
+    atom->natoms -= natoms_per_molecule;
+    if (atom->map_style != Atom::MAP_NONE) atom->map_init();
+    atom->nghost = 0;
+    if (triclinic) domain->x2lamda(atom->nlocal);
+    comm->borders();
+    if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
+    update_gas_atoms_list();
+    ndeletion_successes += 1.0;
+  }
+}
+
+
+/* ----------------------------------------------------------------------
+------------------------------------------------------------------------- */
+
 void FixGCMCVP::attempt_molecule_translation()
 {
   ntranslation_attempts += 1.0;
